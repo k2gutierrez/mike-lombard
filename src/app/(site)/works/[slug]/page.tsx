@@ -11,20 +11,23 @@ import { coverOf } from "@/lib/media";
 import { resolvePreview } from "@/lib/server/preview";
 import type { MediaItem, Project } from "@/lib/types";
 
-export const revalidate = 300;
+/**
+ * Fully dynamic, on purpose.
+ *
+ *  * The page serves `?preview=1`, which reads cookies for the administrator
+ *    check. Pre-rendering (via `generateStaticParams`) would put the render in a
+ *    static context and Next would refuse the cookie read with
+ *    DYNAMIC_SERVER_USAGE — a 500 on any slug that was not pre-rendered.
+ *  * A pre-rendered work would also go stale: publishing from the panel purges
+ *    the cache by tag, but a build-time HTML file would keep serving the old
+ *    version until the next deploy.
+ */
+
 
 async function getProject(slug: string, preview = false) {
   const site = await loadSite({ includeDrafts: preview });
   const project = site.projects.find((item) => item.slug === slug) ?? null;
   return { site, project };
-}
-
-export async function generateStaticParams() {
-  const site = await loadSite();
-  return site.projects
-    .filter((project) => project.status === "published")
-    .slice(0, 40)
-    .map((project) => ({ slug: project.slug }));
 }
 
 export async function generateMetadata({

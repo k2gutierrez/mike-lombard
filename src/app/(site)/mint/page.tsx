@@ -5,7 +5,10 @@ import { MintForm } from "@/components/mint/mint-form";
 import { loadSite } from "@/lib/load-content";
 import { resolvePreview } from "@/lib/server/preview";
 
-export const revalidate = 120;
+// Note: no `revalidate` here on purpose. This route reads `searchParams`
+// (`?preview=1`), and a route-level cache could hand a non-preview render to an
+// administrator — or a preview render to a visitor. The response is generated
+// per request and the cache is purged by the publish action instead.
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await loadSite();

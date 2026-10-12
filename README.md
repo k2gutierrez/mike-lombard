@@ -167,14 +167,22 @@ the artist has approved every text.
 
 ## 8. Handover notes
 
-- This folder is its own Git repository with one commit. `.env.local` is
-  gitignored and already present locally; only `.env.example` is tracked.
-- The Supabase migration has **not** been applied to the live project yet — run
-  `SUPABASE_ACCESS_TOKEN=sbp_... npm run db:apply` (or paste the SQL in the
-  dashboard). `npm run check:backend` tells you exactly what is still missing.
-- The admin panel was verified visually in demo mode; the publish/upload flow
-  against real Supabase must be re-checked once the migration is applied. The
-  checklist is in [docs/04-AMPLIFY.md](docs/04-AMPLIFY.md) §6.
+- Both migrations are **applied to the live Mingles Supabase project** and the
+  administrator role exists for `minglesnft@gmail.com`.
+- The complete flow was verified end to end against that live project: sign-in,
+  draft, upload with progress, cover assignment, preview, publish, the public
+  work page and its image, mint registration, duplicate handling, the
+  registrations table and the CSV export. No console or server errors.
+- The database is left at the seeded baseline: two **draft** placeholder works,
+  two **draft** timeline entries, no media, no registrations. Nothing is public
+  until the artist publishes.
+- This folder is its own Git repository. `.env.local` is gitignored and present
+  locally; only `.env.example` is ever tracked. The Supabase access token used
+  during setup should be revoked at
+  <https://supabase.com/dashboard/account/tokens>.
+- Remaining before launch: the artist's real content, a domain, custom SMTP (if
+  magic-link emails are preferred over the current one-time hand-off), and the
+  Amplify deployment checklist in [docs/04-AMPLIFY.md](docs/04-AMPLIFY.md) §6.
 
 ## 9. Documentation
 

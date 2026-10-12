@@ -4,7 +4,10 @@ import { WorksFilter } from "@/components/works-filter";
 import { categoriesOf, loadSite } from "@/lib/load-content";
 import { resolvePreview } from "@/lib/server/preview";
 
-export const revalidate = 300;
+// Note: no `revalidate` here on purpose. This route reads `searchParams`
+// (`?preview=1`), and a route-level cache could hand a non-preview render to an
+// administrator — or a preview render to a visitor. The response is generated
+// per request and the cache is purged by the publish action instead.
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await loadSite();
@@ -22,7 +25,10 @@ export default async function WorksPage({
   const params = await searchParams;
   const preview = await resolvePreview(params.preview === "1");
   const site = await loadSite({ includeDrafts: preview });
-  const projects = site.projects.filter((project) => project.status === "published");
+  // No status filter here: `loadSite()` already returns published rows only for
+  // the public read, and drafts for an authorised preview. Filtering again would
+  // defeat the preview.
+  const projects = site.projects;
   const categories = categoriesOf(site);
   const initial =
     params.category && (categories.includes(params.category) || params.category === "all")

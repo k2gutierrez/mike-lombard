@@ -16,6 +16,8 @@ import { resolvePreview } from "@/lib/server/preview";
 import { aspectRatio } from "@/lib/media";
 import type { MediaItem } from "@/lib/types";
 
+// The landing page is the busiest route and is purged by the publish action, so
+// a short ISR window is safe and keeps repeat visits cheap.
 export const revalidate = 300;
 
 function findMedia(list: MediaItem[], id: string | null | undefined) {
@@ -38,7 +40,8 @@ export default async function HomePage({
   const portrait = findMedia(siteMedia, content.bio.portraitMediaId);
   const featured = featuredProjects(site);
   const latestMilestones = timeline.slice(0, 3);
-  const published = projects.filter((project) => project.status === "published");
+  // `loadSite()` already scopes this to published rows for the public read.
+  const published = projects;
 
   return (
     <>

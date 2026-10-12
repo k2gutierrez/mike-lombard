@@ -1,5 +1,5 @@
 import "server-only";
-import { SITE_ID, hasSupabasePublic } from "@/lib/config";
+import { SITE_ID, hasSupabasePublic, hasSupabaseService } from "@/lib/config";
 import { decorateMedia, sortMedia, type MediaItem } from "@/lib/media";
 import {
   previewContent,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/preview-content";
 import { createClient } from "@supabase/supabase-js";
 import { supabasePublicKey, supabaseUrl } from "@/lib/config";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Project, SiteContent, TimelineEntry } from "@/lib/types";
 
 export type LoadMode = "live" | "preview";
@@ -124,14 +125,33 @@ function toTimeline(
 }
 
 async function readSite(options: Options): Promise<LoadedSite> {
-  const supabase = anonClient();
   const includeDrafts = Boolean(options.includeDrafts);
+
+  // Two different reads, deliberately:
+  //
+  //  * Public: publishable key. RLS is the security boundary and a draft row is
+  //    simply not returned, whatever this code asks for.
+  //  * Admin preview: the service key, because RLS is *supposed* to hide drafts
+  //    from the publishable key — that is why a preview cannot see them through
+  //    it. This branch is only reachable after `resolvePreview()` has verified a
+  //    live administrator session, which is the authorisation decision.
+  const supabase = includeDrafts && hasSupabaseService
+    ? createSupabaseAdminClient()
+    : anonClient();
+  const projectQuery = supabase
+    .from("ml_projects")
+    .select("*")
+    .order("display_order", { ascending: true });
+  const timelineQuery = supabase
+    .from("ml_timeline")
+    .select("*")
+    .order("display_order", { ascending: true });
 
   const [siteResult, projectResult, mediaResult, timelineResult] = await Promise.all([
     supabase.from("ml_site").select("published, draft").eq("id", SITE_ID).maybeSingle(),
-    supabase.from("ml_projects").select("*").order("display_order", { ascending: true }),
+    includeDrafts ? projectQuery : projectQuery.eq("status", "published"),
     supabase.from("ml_media").select("*").order("display_order", { ascending: true }),
-    supabase.from("ml_timeline").select("*").order("display_order", { ascending: true }),
+    includeDrafts ? timelineQuery : timelineQuery.eq("status", "published"),
   ]);
 
   const firstError =

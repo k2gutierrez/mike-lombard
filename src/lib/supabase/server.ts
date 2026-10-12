@@ -15,14 +15,15 @@ export async function createSupabaseServerClient() {
       getAll() {
         return cookieStore.getAll();
       },
-      setAll(cookiesToSet, headers) {
+      setAll(cookiesToSet) {
+        // Supabase also reports HTTP cache headers here. They must NOT be turned
+        // into cookies (`Set-Cookie: Cache-Control=…` is invalid and can make a
+        // browser drop the whole cookie batch). They are applied by `proxy.ts`
+        // and by the auth callback, which own a real Response object.
         try {
           for (const { name, value, options } of cookiesToSet) {
+            if (!/^[A-Za-z0-9._-]+$/.test(name)) continue;
             cookieStore.set(name, value, options);
-          }
-          for (const [key, value] of Object.entries(headers ?? {})) {
-            if (key.toLowerCase() === "set-cookie") continue;
-            cookieStore.set(key, value);
           }
         } catch {
           // Called from a Server Component render: cookies are read-only there.

@@ -94,6 +94,12 @@ export function MediaManager({
   onCoverChange?: (mediaId: string | null) => void;
   disabled?: boolean;
 }) {
+  /** Mirrors the cover the server assigns to the first uploaded image. */
+  const [autoCover, setAutoCover] = useState<string | null>(coverMediaId ?? null);
+
+  useEffect(() => {
+    setAutoCover(coverMediaId ?? null);
+  }, [coverMediaId]);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -217,11 +223,22 @@ export function MediaManager({
       if (created.length) {
         onChange([...ordered, ...created]);
         await persistOrder([...ordered, ...created]);
+
+        // The API sets the first image of a project as its cover. Reflect that
+        // here, otherwise the next save would send `coverMediaId: null` and undo
+        // the assignment.
+        if (scope === "project" && !autoCover && onCoverChange) {
+          const firstImage = created.find((item) => item.kind === "image");
+          if (firstImage) {
+            setAutoCover(firstImage.id);
+            onCoverChange(firstImage.id);
+          }
+        }
       }
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
     },
-    [onChange, ordered, persistOrder, projectId, scope],
+    [autoCover, onChange, onCoverChange, ordered, persistOrder, projectId, scope],
   );
 
   const onDragEnd = async (event: DragEndEvent) => {
@@ -349,7 +366,7 @@ export function MediaManager({
                 <SortableMedia
                   key={item.id}
                   item={item}
-                  isCover={coverMediaId === item.id}
+                  isCover={(coverMediaId ?? autoCover) === item.id}
                   onPatch={patch}
                   onSave={saveMeta}
                   onRemove={remove}

@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SITE_ID, hasSupabaseService } from "@/lib/config";
+import { MEDIA_BUCKET, SITE_ID, hasSupabaseService } from "@/lib/config";
 import { decorateMedia, sortMedia, type MediaItem } from "@/lib/media";
 import {
   previewContent,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/preview-content";
 import { sanitizeSiteContent, sanitizeProject, sanitizeTimeline } from "@/lib/sanitize";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { removeStorageFolder } from "@/lib/server/storage";
 import { slugify } from "@/lib/validation";
 import type {
   MintInterestRecord,
@@ -229,6 +230,7 @@ export async function saveProject(input: unknown): Promise<Project> {
     featured: parsed.featured,
     featured_rank: parsed.featuredRank,
     cover_media_id: parsed.coverMediaId,
+    publish_pending: parsed.status === "draft",
     ...(parsed.status === "published" ? { published_at: new Date().toISOString() } : {}),
   };
 
@@ -275,17 +277,29 @@ export async function deleteProject(id: string): Promise<void> {
     return;
   }
   // Storage cleanup first: a failed DB delete is recoverable, orphan objects are not.
+  const folders = new Set<string>();
+  const paths: string[] = [];
+
   const { data: media } = await supabase
     .from("ml_media")
     .select("bucket, path, poster_path")
     .eq("project_id", id);
 
-  const paths = (media ?? []).flatMap((row) =>
-    [row.path as string, row.poster_path as string | null].filter(Boolean) as string[],
-  );
-  if (paths.length) {
-    await supabase.storage.from("ml-media").remove(paths);
+  for (const row of media ?? []) {
+    const path = row.path as string;
+    if (path) {
+      paths.push(path);
+      const folder = path.slice(0, path.lastIndexOf("/"));
+      if (folder) folders.add(folder);
+    }
+    const poster = row.poster_path as string | null;
+    if (poster) paths.push(poster);
   }
+
+  if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  // Sweep the folders too: anything an interrupted upload left behind would
+  // otherwise become an orphan nobody can see or delete from the panel.
+  for (const folder of folders) await removeStorageFolder(supabase, folder);
 
   const { error } = await supabase.from("ml_projects").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -337,6 +351,7 @@ export async function saveTimelineEntry(input: unknown) {
     link_url: parsed.linkUrl,
     media_id: parsed.mediaId,
     status: parsed.status,
+    publish_pending: parsed.status === "draft",
     display_order: parsed.order,
   };
 
@@ -396,7 +411,9 @@ export async function deleteMedia(id: string): Promise<void> {
     const paths = [row.path as string, row.poster_path as string | null].filter(
       Boolean,
     ) as string[];
-    if (paths.length) await supabase.storage.from("ml-media").remove(paths);
+    if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+    const folder = (row.path as string).slice(0, (row.path as string).lastIndexOf("/"));
+    if (folder) await removeStorageFolder(supabase, folder);
   }
 }
 
@@ -489,13 +506,19 @@ export async function publishAll(): Promise<{ publishedAt: string }> {
     .eq("id", SITE_ID);
   if (siteError) throw new Error(siteError.message);
 
+  // Only rows with an explicit publication intent are promoted. Rows that are
+  // still drafts because nobody touched them (seeded placeholders, half-finished
+  // work) stay invisible.
   const [projects, timeline] = await Promise.all([
     supabase
       .from("ml_projects")
-      .update({ status: "published", published_at: stamp })
-      .eq("status", "draft")
+      .update({ status: "published", published_at: stamp, publish_pending: false })
+      .eq("publish_pending", true)
       .select("id"),
-    supabase.from("ml_timeline").update({ status: "published" }).eq("status", "draft"),
+    supabase
+      .from("ml_timeline")
+      .update({ status: "published", publish_pending: false })
+      .eq("publish_pending", true),
   ]);
   if (projects.error) throw new Error(projects.error.message);
   if (timeline.error) throw new Error(timeline.error.message);
@@ -522,6 +545,13 @@ export async function revertToPublished(): Promise<boolean> {
     .update({ draft: site.data.published })
     .eq("id", SITE_ID);
   if (error) throw new Error(error.message);
+
+  // Discarding a draft also clears the publication intent, so a revert does not
+  // leave rows queued to go live on the next publish.
+  await Promise.all([
+    supabase.from("ml_projects").update({ publish_pending: false }).eq("publish_pending", true),
+    supabase.from("ml_timeline").update({ publish_pending: false }).eq("publish_pending", true),
+  ]);
   return true;
 }
 

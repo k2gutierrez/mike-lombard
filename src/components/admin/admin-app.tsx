@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -66,6 +66,18 @@ const TIMELINE_KINDS: TimelineKind[] = [
   "press",
   "residency",
 ];
+
+/** Media can be reported by both an upload and a save; never show it twice. */
+function dedupeMedia(media: MediaItem[]): MediaItem[] {
+  const seen = new Set<string>();
+  const unique: MediaItem[] = [];
+  for (const item of sortMedia(media)) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    unique.push(item);
+  }
+  return unique;
+}
 
 function emptyProject(order: number): Project {
   return {
@@ -612,13 +624,35 @@ function ProjectEditor({
   setNotice: (value: { tone: "ok" | "error"; text: string } | null) => void;
   setSelectedId: (id: string | null) => void;
 }) {
-  const [draft, setDraft] = useState<Project>(project);
-  const [media, setMedia] = useState<MediaItem[]>(sortMedia(project.media));
+  /**
+   * ONE state object for the work being edited, media included.
+   *
+   * It used to be two (`draft` + a separate `media` list). That split broke the
+   * gallery: any parent re-render carrying a newer project prop (assigning a
+   * cover does exactly that) replaced `media` with `project.media`, which is the
+   * snapshot the save returned — empty right after a fresh upload. The uploaded
+   * images vanished from the panel even though the row and the file were stored.
+   */
+  const [draft, setDraft] = useState<Project>(() => ({
+    ...project,
+    media: dedupeMedia(project.media),
+  }));
 
+  /**
+   * Reset only when a *different* work is opened. Syncing on every `project`
+   * prop change would push the parent's snapshot over local edits — the gallery
+   * was losing freshly uploaded files exactly that way.
+   */
+  const loadedId = useRef(project.id);
   useEffect(() => {
-    setDraft(project);
-    setMedia(sortMedia(project.media));
+    if (loadedId.current === project.id) return;
+    loadedId.current = project.id;
+    setDraft({ ...project, media: dedupeMedia(project.media) });
   }, [project]);
+
+  const setMedia = (next: MediaItem[]) => {
+    setDraft((current) => ({ ...current, media: dedupeMedia(next) }));
+  };
 
   const update = (changes: Partial<Project>) => {
     setDraft((current) => ({ ...current, ...changes }));
@@ -627,6 +661,10 @@ function ProjectEditor({
 
   const save = async (override?: Partial<Project>) => {
     const payload = { ...draft, ...override };
+    // Keep whatever is already loaded locally: the save response carries the
+    // server's media snapshot, and replacing the gallery with it is only correct
+    // when the two agree.
+    const knownMedia = draft.media;
     if (!payload.title.trim()) {
       setNotice({ tone: "error", text: "A project needs a title." });
       return;
@@ -639,13 +677,16 @@ function ProjectEditor({
       },
     });
     if (data?.project) {
-      setDraft(data.project);
-      setMedia(data.project.media);
+      const merged: Project = {
+        ...data.project,
+        media: dedupeMedia(data.project.media.length ? data.project.media : knownMedia),
+      };
+      setDraft(merged);
       const exists = projects.some((item) => item.id === data.project.id);
       setProjects(
         exists
-          ? projects.map((item) => (item.id === data.project.id ? data.project : item))
-          : [...projects.filter((item) => item.id), data.project],
+          ? projects.map((item) => (item.id === merged.id ? merged : item))
+          : [...projects.filter((item) => item.id), merged],
       );
       setSelectedId(data.project.id);
       setDirty(false);
@@ -823,14 +864,11 @@ function ProjectEditor({
       <div className="admin-panel p-5">
         {draft.id ? (
           <MediaManager
-            items={media}
+            items={draft.media}
             scope="project"
             projectId={draft.id}
             coverMediaId={draft.coverMediaId}
-            onChange={(next) => {
-              setMedia(next);
-              setDraft((current) => ({ ...current, media: next }));
-            }}
+            onChange={setMedia}
             onCoverChange={(mediaId) => {
               setDraft((current) => ({ ...current, coverMediaId: mediaId }));
               setProjects(
@@ -1952,25 +1990,38 @@ function RegistrationsTab() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/admin/mint")
-      .then((response) => response.json())
-      .then((response) =>
-        response.json().then(
-          (payload: { ok?: boolean; rows?: Registration[]; error?: string }) => {
-            if (cancelled) return;
-            if (payload.ok && payload.rows) {
-              setRows(payload.rows);
-              return;
-            }
-            setError(
-              response.status === 401
-                ? "Sign in as an administrator to read the registrations."
-                : (payload.error ?? "Could not load registrations."),
-            );
-          },
-        ),
-      )
-      .catch(() => setError("Could not load registrations."));
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/admin/mint", { cache: "no-store" });
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          rows?: Registration[];
+          error?: string;
+        };
+        if (cancelled) return;
+
+        if (response.ok && payload.ok && Array.isArray(payload.rows)) {
+          setRows(payload.rows);
+          setError(null);
+          return;
+        }
+
+        setRows([]);
+        setError(
+          response.status === 401
+            ? "Sign in as an administrator to read the registrations."
+            : (payload.error ?? "Could not load registrations."),
+        );
+      } catch {
+        if (!cancelled) {
+          setRows([]);
+          setError("Could not load registrations.");
+        }
+      }
+    };
+
+    void load();
     return () => {
       cancelled = true;
     };

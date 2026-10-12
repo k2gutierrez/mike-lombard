@@ -169,22 +169,43 @@ instead of the master file, and the CDN does the resizing. Without it, the Next.
 image optimizer resizes the originals and caches the derivatives for 30 days —
 also fine, just more work in the app runtime.
 
-## 8. Verified / not verified
+## 8. Verified against the live project
 
-Verified locally and reproducible with `npm test`:
+Both migrations are applied to `zifpnidxmvofiqqbekhe`, the `ml-media` bucket
+exists, and `minglesnft@gmail.com` holds the administrator role.
 
-- The migration applies cleanly to a Postgres engine with Supabase's
-  `anon` / `authenticated` / `service_role` roles, `auth.uid()` and the storage
-  schema.
-- Anonymous sees published rows only; a signed-in stranger sees nothing extra and
-  cannot publish, insert a role, or write content.
+Automated, reproducible with `npm test` (PGlite, a real Postgres engine):
+
+- The migrations apply cleanly against Supabase's `anon` / `authenticated` /
+  `service_role` roles, `auth.uid()` and the storage schema.
+- Anonymous sees published rows only. A signed-in stranger sees nothing extra and
+  cannot publish, insert a role or write content.
 - Publishing snapshots the draft and stamps the release time without touching it
   afterwards.
-- Duplicate registrations are rejected by the database, and the throttle
-  function denies the request over the limit.
+- Duplicate registrations are rejected by the database, and the throttle function
+  denies the request over the limit.
 
-Not verified by me, because it needs your credentials:
+Verified end to end in a real browser against the live project (18 checks):
 
-- The migration has **not** been applied to the live project from this machine.
-- No email was sent and no magic link was generated against your account.
-- Upload behaviour against real Storage is untested end to end here.
+| Check | Result |
+| --- | --- |
+| Admin sign-in with a one-time token | ✅ |
+| Seeded placeholders stay invisible after a publish | ✅ |
+| Create work, save draft | ✅ |
+| Multi-file upload with real progress | ✅ |
+| Cover assigned to the first image, kept across save and reopen | ✅ |
+| Media listed exactly once after upload, save and reopen | ✅ |
+| `?preview=1` shows drafts to the administrator | ✅ |
+| `?preview=1` shows nothing extra to an anonymous visitor | ✅ |
+| Publish promotes only rows queued for release | ✅ |
+| Work appears on the public index and its own page | ✅ |
+| Work page renders the stored image and the description | ✅ |
+| Mint registration accepted, stored with consent and timestamp | ✅ |
+| Duplicate registration handled idempotently | ✅ |
+| Registrations table renders for the administrator | ✅ |
+| CSV export (200, includes `consent_at`) | ✅ |
+| Deleting a work removes it from the site and sweeps Storage | ✅ |
+| Console / server errors during the whole run | none |
+
+Not verified here: email delivery (no SMTP is configured, which is why the
+hand-off mode exists), and behaviour on AWS Amplify, which needs a deployment.
