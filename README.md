@@ -23,6 +23,8 @@ content** and `/admin` works in **demo mode** (changes live in the browser
 session only). Nothing breaks, nothing lies: the panel says "Demo mode" and every
 placeholder page states that the text is pending the artist's review.
 
+Node 22 is pinned in `.nvmrc` (Next.js 16 requires it).
+
 ```bash
 npm run typecheck    # tsc --noEmit
 npm test             # 16 tests: content rules + SQL/RLS against an embedded Postgres

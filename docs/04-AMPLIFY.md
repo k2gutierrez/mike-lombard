@@ -96,7 +96,50 @@ Then in a browser:
    downloaded** until a play button is pressed.
 6. Confirm `/admin` redirects to `/admin/login` in a private window.
 
-## 7. Rollback
+## 7. Troubleshooting
+
+### `npm error Missing: @solana/... from lock file` (build fails in preBuild)
+
+**What happened.** `npm ci` refuses to install when `package-lock.json` does not
+contain every package its resolution needs. In this project the lockfile had been
+generated and then rewritten while dependencies were still changing (`sharp` was
+added after the first install), so the tree carried `@solana/*@5.5.1` while
+transitive peers wanted `6.10.0` — and those entries were absent.
+
+**Why it only appeared on Amplify.** `npm ci` validates the lockfile strictly, and
+the Amplify image ran a different npm major than the machine that wrote the lock.
+A local `npm install` tolerates the mismatch; `npm ci` does not.
+
+**What was done.**
+
+1. Regenerated the lockfile from scratch (`rm -rf node_modules package-lock.json
+   && npm install`), so every transitive package — including `@solana/*` at both
+   5.5.1 and 6.10.0 — is now pinned with its integrity hash.
+2. Verified with a real `npm ci` against the regenerated lock: exit code 0, then
+   `tsc --noEmit`, 16 tests and `next build` all pass on that clean install.
+3. `amplify.yml` now uses `npm ci || npm install` so a future lockfile mismatch
+   degrades instead of stopping the deploy, and prints `node -v` / `npm -v` for
+   diagnosis. `.nvmrc` pins Node 22.
+
+**Before you push a dependency change**, run the same thing Amplify will run:
+
+```bash
+npm install                 # updates package-lock.json
+rm -rf node_modules
+npm ci                      # must exit 0 — this is the gate
+npm run build
+```
+
+### Other common failures
+
+| Symptom | Cause |
+| --- | --- |
+| `next: not found` | `npm ci` failed earlier in the same phase; fix the install first. |
+| Images 500 on Amplify but fine locally | `sharp` missing. It is an optional dependency; check the install log. |
+| Sign-in redirects to `localhost` | `APP_ORIGIN` in the Amplify environment still points at localhost. |
+| `/admin` redirects back to `/admin/login` | `ML_ADMIN_EMAILS` empty and no row in `ml_admin_roles` for that account. |
+
+## 8. Rollback
 
 Amplify keeps previous deployments: **App settings → Build history → Redeploy**
 on the last good build. Because the content lives in Supabase, redeploying the
