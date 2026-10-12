@@ -1,10 +1,8 @@
 import { Suspense } from "react";
 import { AlertTriangle, Info } from "lucide-react";
 import { LoginForm } from "@/components/admin/login-form";
-import { hasSupabaseService as hasPublicSupabase, inspectEnvironment } from "@/lib/config";
-import { hasServiceKey } from "@/lib/supabase/admin";
-
-const hasSupabaseService = hasPublicSupabase || hasServiceKey;
+import { inspectEnvironment } from "@/lib/config";
+import { serverConfig, serverHasSupabase } from "@/lib/server/runtime-config";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +10,17 @@ export const dynamic = "force-dynamic";
 export default function AdminLoginPage() {
   // Configuration problems are reported here, in the deployment, instead of
   // leaving the visitor with a bare "Unauthorized" from Supabase.
-  const issues = inspectEnvironment();
+  // Values that arrive baked into the build count as configured, so the panel
+  // never reports a false "not configured" on a working deployment.
+  const configured = {
+    NEXT_PUBLIC_SUPABASE_URL: serverConfig.supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: serverConfig.supabasePublicKey,
+    SUPABASE_SERVICE_ROLE_KEY: serverConfig.supabaseServiceKey,
+  } as Record<string, string>;
+
+  const issues = inspectEnvironment(configured);
   const fatal = issues.filter((issue) => issue.level === "fatal");
+  const hasSupabaseService = serverHasSupabase();
 
   return (
     <div className="grid min-h-dvh place-items-center px-5 py-16">

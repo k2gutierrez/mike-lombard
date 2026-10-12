@@ -113,13 +113,21 @@ export type EnvIssue = {
  * deployment should say what is wrong instead of silently falling back to demo
  * mode or blaming the visitor with a bare "Unauthorized".
  */
-export function inspectEnvironment(): EnvIssue[] {
+export function inspectEnvironment(overrides: Record<string, string> = {}): EnvIssue[] {
   const issues: EnvIssue[] = [];
+  const valueOf = (name: string, fallback: string) => overrides[name] || fallback;
+
+  const serviceKey = valueOf("SUPABASE_SERVICE_ROLE_KEY", supabaseServiceKey);
+  const publicKey = valueOf("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", supabasePublicKey);
+  const projectUrl = valueOf("NEXT_PUBLIC_SUPABASE_URL", supabaseUrl);
 
   const required: Array<[string, string]> = [
-    ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
-    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", supabasePublicKey],
-    ["SUPABASE_SERVICE_ROLE_KEY", supabaseServiceKey],
+    ["NEXT_PUBLIC_SUPABASE_URL", projectUrl],
+    [
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      valueOf("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", supabasePublicKey),
+    ],
+    ["SUPABASE_SERVICE_ROLE_KEY", valueOf("SUPABASE_SERVICE_ROLE_KEY", supabaseServiceKey)],
   ];
   for (const [variable, value] of required) {
     if (!value) {
@@ -127,25 +135,25 @@ export function inspectEnvironment(): EnvIssue[] {
     }
   }
 
-  if (supabaseUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(supabaseUrl)) {
+  if (projectUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(projectUrl)) {
     issues.push({
       level: "warning",
       variable: "NEXT_PUBLIC_SUPABASE_URL",
-      message: `does not look like a Supabase project URL (got "${supabaseUrl}").`,
+      message: `does not look like a Supabase project URL (got "${projectUrl}").`,
     });
   }
 
   // The publishable key and the service key are different secrets. Pasted into
   // the wrong variable, the server authenticates as the wrong role and Supabase
   // answers 401 — which the panel then shows as "Unauthorized".
-  if (supabaseServiceKey && supabaseServiceKey === supabasePublicKey) {
+  if (serviceKey && serviceKey === publicKey) {
     issues.push({
       level: "fatal",
       variable: "SUPABASE_SERVICE_ROLE_KEY",
       message: "is identical to the publishable key. They must be different.",
     });
   }
-  if (supabaseServiceKey && supabaseServiceKey.startsWith("sb_publishable_")) {
+  if (serviceKey && serviceKey.startsWith("sb_publishable_")) {
     issues.push({
       level: "fatal",
       variable: "SUPABASE_SERVICE_ROLE_KEY",

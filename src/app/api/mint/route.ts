@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { appOrigin, hasSupabaseService } from "@/lib/config";
+import { appOrigin as fallbackOrigin } from "@/lib/config";
+import { serverConfig, serverHasSupabase } from "@/lib/server/runtime-config";
+
+/** The inlined value wins; the universal config is the fallback. */
+const appOrigin = serverConfig.appOrigin || fallbackOrigin;
 import { recordMintInterest, hitRateLimit } from "@/lib/server/admin-data";
 import {
   cleanOptionalText,
@@ -50,7 +54,7 @@ function json(body: unknown, status = 200) {
 }
 
 export async function POST(request: Request) {
-  if (!hasSupabaseService) {
+  if (!serverHasSupabase()) {
     return json(
       {
         ok: false,
@@ -163,5 +167,5 @@ export async function POST(request: Request) {
 
 /** Small helper used by the client to log the origin it posted from. */
 export function GET() {
-  return json({ ok: true, origin: appOrigin, supabase: hasSupabaseService });
+  return json({ ok: true, origin: appOrigin, supabase: serverHasSupabase() });
 }
