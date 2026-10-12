@@ -77,6 +77,25 @@ while the others are handed to the runtime by the build step described below.
 **Do not add `SUPABASE_ACCESS_TOKEN`** to Amplify: it is only for running
 `npm run db:apply` from a trusted machine, and it can change your database schema.
 
+### Where to sign in
+
+Two entry points, both public:
+
+* the **Studio login** button in the site footer (and inside the mobile menu),
+* directly at `/admin` or `/admin/login`.
+
+`/admin` redirects to `/admin/login` for anyone without a session. If the panel is
+unreachable because of configuration, `/admin/login` says which variable is wrong
+instead of showing "Unauthorized".
+
+### Values pasted with quotes
+
+A key pasted into the Amplify console as `"eyJ..."` — quotes included — is rejected
+by Supabase with a 401, which the panel surfaces as "Unauthorized". The value is
+now repaired automatically (quotes, `export ` prefix and stray whitespace are
+stripped) and `/admin/login` shows a note saying it happened. Those variables are
+still worth fixing in the console.
+
 ### How to confirm the build picked them up
 
 The build log prints one line per expected variable:
@@ -202,6 +221,7 @@ npx --yes yaml amplify.yml > /dev/null && echo "spec OK"
 | Images 500 on Amplify but fine locally | `sharp` missing. It is an optional dependency; check the install log. |
 | Sign-in redirects to `localhost` | `APP_ORIGIN` in the Amplify environment still points at localhost. |
 | `/admin` redirects back to `/admin/login` | `ML_ADMIN_EMAILS` empty and no row in `ml_admin_roles` for that account. |
+| `/admin` shows a bare **"Unauthorized"** | `SUPABASE_SERVICE_ROLE_KEY` reached the server but is wrong: pasted with quotes, truncated, or it is the publishable key. The value is now cleaned automatically, and `/admin/login` lists what is misconfigured. |
 | `/admin` shows **"Demo mode. Supabase is not configured…"** | The `.env.production` step is missing from `amplify.yml`, or `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are not set in the Amplify environment. This is the single most common deployment failure of this project. |
 | Build fails with `FATAL: NEXT_PUBLIC_SUPABASE_URL is not set` | Working as intended: the build stops instead of deploying a site that silently runs in demo mode. |
 

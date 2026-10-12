@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, X, Instagram, Twitter, Globe, ArrowUpRight } from "lucide-react";
+import { Menu, X, Instagram, Twitter, Globe, ArrowUpRight, LogIn } from "lucide-react";
 import type { SocialLink } from "@/lib/types";
 import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -171,6 +171,12 @@ export function SiteHeader({
               >
                 Register interest <ArrowUpRight size={14} aria-hidden="true" />
               </Link>
+              <Link
+                href="/admin"
+                className="mt-3 inline-flex items-center justify-center gap-2 border border-edge px-5 py-3 font-mono text-[0.625rem] tracking-[0.16em] text-bone-dim uppercase"
+              >
+                <LogIn size={13} aria-hidden="true" /> Studio login
+              </Link>
             </nav>
           </motion.div>
         ) : null}
@@ -253,10 +259,14 @@ export function SiteFooter({
           )}
           <Link
             href="/admin"
-            className="mt-2 w-fit font-mono text-[0.625rem] tracking-[0.16em] text-bone-faint uppercase transition-colors hover:text-bone"
+            className="mt-2 inline-flex w-fit items-center gap-2 border border-edge px-3 py-2 font-mono text-[0.625rem] tracking-[0.16em] text-bone-dim uppercase transition-colors hover:border-bone hover:text-bone"
           >
-            {adminEmail ? `Studio · ${adminEmail}` : "Admin"}
+            <LogIn size={12} aria-hidden="true" />
+            {adminEmail ? "Content studio" : "Studio login"}
           </Link>
+          <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-bone-faint">
+            For the artist and site administrators.
+          </p>
         </div>
       </div>
       <div className="shell flex flex-col gap-2 border-t border-edge py-6 font-mono text-[0.625rem] tracking-[0.14em] text-bone-faint uppercase sm:flex-row sm:items-center sm:justify-between">

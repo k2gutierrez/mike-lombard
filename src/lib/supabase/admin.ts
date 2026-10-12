@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { supabaseUrl } from "@/lib/config";
+import { supabaseServiceKey, supabaseUrl } from "@/lib/config";
 
 /**
  * Service-role client. BYPASSES RLS — never import this from a Client Component
@@ -11,7 +11,9 @@ import { supabaseUrl } from "@/lib/config";
 let cached: SupabaseClient | null = null;
 
 export function createSupabaseAdminClient(): SupabaseClient {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Read through the sanitiser in lib/config: a key pasted with quotes or a
+  // trailing newline is rejected by Supabase with a 401 "Unauthorized".
+  const key = supabaseServiceKey;
   if (!supabaseUrl || !key) {
     throw new Error(
       "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.",
