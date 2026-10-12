@@ -185,7 +185,35 @@ Then in a browser:
    downloaded** until a play button is pressed.
 6. Confirm `/admin` redirects to `/admin/login` in a private window.
 
-## 7. Troubleshooting
+## 7. Verified on the live domain
+
+`https://mike-lombard.com` was checked end to end after the first successful
+deploy: **22 of 22 checks passed, with no browser errors.**
+
+| Area | Result |
+| --- | --- |
+| Public routes `/`, `/works`, `/biography`, `/career`, `/mint` | ✅ |
+| Footer "Studio login" leads to the sign-in form | ✅ |
+| Mint form renders, submits, and rejects duplicates idempotently | ✅ |
+| Admin sign-in with the administrator email | ✅ |
+| Panel reports **LIVE BACKEND** (not demo mode) | ✅ |
+| All six tabs render with no "Could not load" / "Not authorized" | ✅ |
+| Registrations visible to the admin, CSV export includes `consent_at` | ✅ |
+| `?preview=1` shows drafts to the admin and nothing to anonymous visitors | ✅ |
+
+Two defects were found and fixed by this verification, both invisible locally:
+
+1. **`SUPABASE_SERVICE_ROLE_KEY` never reached the runtime.** It was missing from
+   the Amplify environment altogether; after it was added, the build-time
+   inlining is what makes it survive into the packaged Lambda.
+2. **`/mint` crashed on hydration** with `WagmiProviderNotFoundError`. The wallet
+   field called a wagmi hook while being rendered outside its provider whenever
+   the WalletConnect project id was present at build time but absent at runtime.
+   `wallet-field.tsx` is now hook-free, `wallet-field-connected.tsx` is the only
+   wagmi consumer and is mounted only inside the provider, and the decision to
+   mount wallet code is taken on the server and passed down as a prop.
+
+## 8. Troubleshooting
 
 ### `npm error Missing: @solana/... from lock file` (build fails in preBuild)
 
@@ -250,7 +278,7 @@ npx --yes yaml amplify.yml > /dev/null && echo "spec OK"
 | `/admin` shows **"Demo mode. Supabase is not configured…"** | The `.env.production` step is missing from `amplify.yml`, or `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are not set in the Amplify environment. This is the single most common deployment failure of this project. |
 | Build fails with `FATAL: NEXT_PUBLIC_SUPABASE_URL is not set` | Working as intended: the build stops instead of deploying a site that silently runs in demo mode. |
 
-## 8. Rollback
+## 9. Rollback
 
 Amplify keeps previous deployments: **App settings → Build history → Redeploy**
 on the last good build. Because the content lives in Supabase, redeploying the
