@@ -1,0 +1,24 @@
+version: 1
+# AWS Amplify Hosting build for a Next.js 16 App Router project (SSR).
+# Region, branch and environment variables are configured in the Amplify console.
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Node 22 is required by Next.js 16.
+        - nvm use 22
+        - node -v
+        - npm ci --no-audit --no-fund
+    build:
+      commands:
+        - env | grep -E '^(NEXT_PUBLIC_|APP_ORIGIN|ML_|SUPABASE_)' | sed 's/=.*/=<set>/' || true
+        - npm run build
+  artifacts:
+    # Amplify's Next.js support reads the build output and the static assets.
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
