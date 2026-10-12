@@ -175,6 +175,25 @@ npm ci                      # must exit 0 — this is the gate
 npm run build
 ```
 
+### `Unable to parse build spec: bad indentation of a mapping entry`
+
+The build never started: Amplify could not parse `amplify.yml`. Two constructs did
+it, both fixed:
+
+| Construct | Parser error |
+| --- | --- |
+| Unquoted `${!var}` indirect expansion | `bad indentation of a mapping entry` |
+| A literal `KEY: value` inside an unquoted command (`echo "SUPABASE_...: set"`) | `nested mappings are not allowed in compact mappings` |
+
+Every command is now a single-quoted string, with no `${...}` expansions and no
+`: ` sequences. **If you edit `amplify.yml`, validate it before pushing** — a
+parse error fails the build in under a second and looks nothing like the real
+problem:
+
+```bash
+npx --yes yaml amplify.yml > /dev/null && echo "spec OK"
+```
+
 ### Other common failures
 
 | Symptom | Cause |
