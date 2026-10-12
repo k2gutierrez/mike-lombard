@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { appOrigin as fallbackOrigin } from "@/lib/config";
-import { serverConfig, serverHasSupabase } from "@/lib/server/runtime-config";
+import {
+  configurationReport,
+  serverConfig,
+  serverHasSupabase,
+} from "@/lib/server/runtime-config";
 
 /** The inlined value wins; the universal config is the fallback. */
 const appOrigin = serverConfig.appOrigin || fallbackOrigin;
@@ -167,5 +171,10 @@ export async function POST(request: Request) {
 
 /** Small helper used by the client to log the origin it posted from. */
 export function GET() {
-  return json({ ok: true, origin: appOrigin, supabase: serverHasSupabase() });
+  return json({
+    ok: true,
+    origin: appOrigin,
+    supabase: serverHasSupabase(),
+    ...configurationReport(),
+  });
 }

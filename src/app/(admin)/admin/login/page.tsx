@@ -2,7 +2,11 @@ import { Suspense } from "react";
 import { AlertTriangle, Info } from "lucide-react";
 import { LoginForm } from "@/components/admin/login-form";
 import { inspectEnvironment } from "@/lib/config";
-import { serverConfig, serverHasSupabase } from "@/lib/server/runtime-config";
+import {
+  configurationReport,
+  serverConfig,
+  serverHasSupabase,
+} from "@/lib/server/runtime-config";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +25,7 @@ export default function AdminLoginPage() {
   const issues = inspectEnvironment(configured);
   const fatal = issues.filter((issue) => issue.level === "fatal");
   const hasSupabaseService = serverHasSupabase();
+  const report = configurationReport();
 
   return (
     <div className="grid min-h-dvh place-items-center px-5 py-16">
@@ -46,6 +51,20 @@ export default function AdminLoginPage() {
               Environment variables), then redeploy. Sign-in cannot work until they are
               correct.
             </p>
+            <dl className="mt-3 flex flex-col gap-1 border-t border-edge pt-3 font-mono text-[0.625rem] text-bone-faint">
+              <div className="flex gap-2">
+                <dt>baked into the build</dt>
+                <dd>{report.inlinedKeys.join(", ") || "nothing"}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt>present at runtime</dt>
+                <dd>{report.environmentKeys.join(", ") || "nothing"}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt>service-role key</dt>
+                <dd>{report.serviceKeySource}</dd>
+              </div>
+            </dl>
           </div>
         ) : issues.length ? (
           <div className="mb-6 border border-edge px-4 py-3 text-xs text-bone-faint">

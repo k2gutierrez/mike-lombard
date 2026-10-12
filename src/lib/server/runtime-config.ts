@@ -42,3 +42,39 @@ export const serverConfig = {
 export function serverHasSupabase(): boolean {
   return Boolean(serverConfig.supabaseUrl && serverConfig.supabaseServiceKey);
 }
+
+/**
+ * Names-only diagnostic. Answers the question that is otherwise invisible from
+ * outside the deployment: did the build bake the value in, and does the running
+ * process also see it in its environment? No value is ever returned.
+ */
+export function configurationReport() {
+  const probe = [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "APP_ORIGIN",
+    "NEXT_PUBLIC_SITE_URL",
+    "ML_ADMIN_EMAILS",
+    "ML_AUTH_MODE",
+    "ML_HASH_SALT",
+  ] as const;
+
+  const inlined: string[] = [];
+  const environment: string[] = [];
+  for (const name of probe) {
+    if (inlinedValue(name)) inlined.push(name);
+    if (process.env[name]) environment.push(name);
+  }
+
+  return {
+    inlinedKeys: inlined,
+    environmentKeys: environment,
+    /** Where the service-role key was found, if anywhere. */
+    serviceKeySource: inlinedValue("SUPABASE_SERVICE_ROLE_KEY")
+      ? "build"
+      : process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? "runtime-env"
+        : "missing",
+  };
+}
