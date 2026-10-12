@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/server/auth";
 import { loadAdminDocument } from "@/lib/server/admin-data";
 import { AdminApp } from "@/components/admin/admin-app";
-import { hasSupabaseService } from "@/lib/config";
+import { hasSupabaseService as hasPublicSupabase } from "@/lib/config";
+import { hasServiceKey } from "@/lib/supabase/admin";
+
+// The panel needs the service-role key at runtime, which on some hosts only
+// exists because it was inlined into the build.
+const hasSupabaseService = hasPublicSupabase || hasServiceKey;
 
 export const dynamic = "force-dynamic";
 

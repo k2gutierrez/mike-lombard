@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { appOrigin, hasSupabaseService } from "@/lib/config";
+import { appOrigin as publicOrigin, hasSupabaseService } from "@/lib/config";
+import { inlinedValue } from "@/lib/server/runtime-config";
+
+const appOrigin = inlinedValue("APP_ORIGIN") ?? publicOrigin;
 import { isAdminEmail } from "@/lib/server/auth";
 import { hitRateLimit } from "@/lib/server/admin-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";

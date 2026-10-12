@@ -7,6 +7,13 @@
  */
 
 /**
+ * This module is imported by Client Components and by the test suite, so it must
+ * stay free of `server-only` dependencies. Server secrets are read in
+ * `src/lib/server/*`, which may prefer values baked into the build by
+ * `scripts/generate-runtime-config.mjs`.
+ */
+
+/**
  * Reads an environment variable and repairs the mistakes that are easy to make
  * when pasting a value into a hosting console:
  *

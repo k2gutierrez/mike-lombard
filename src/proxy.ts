@@ -5,7 +5,11 @@ import {
   serializeCookieHeader,
   type CookieOptions,
 } from "@supabase/ssr";
-import { supabasePublicKey, supabaseUrl } from "@/lib/config";
+import { supabasePublicKey, supabaseUrl as publicUrl } from "@/lib/config";
+import { inlinedValue } from "@/lib/server/runtime-config";
+
+// Inlined values win on hosts where the runtime does not get the environment.
+const supabaseUrl = inlinedValue("NEXT_PUBLIC_SUPABASE_URL") ?? publicUrl;
 
 /**
  * Next.js 16 renamed the `middleware` convention to `proxy`.

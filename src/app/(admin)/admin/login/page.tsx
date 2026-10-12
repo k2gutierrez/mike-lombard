@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { AlertTriangle, Info } from "lucide-react";
 import { LoginForm } from "@/components/admin/login-form";
-import { hasSupabaseService, inspectEnvironment } from "@/lib/config";
+import { hasSupabaseService as hasPublicSupabase, inspectEnvironment } from "@/lib/config";
+import { hasServiceKey } from "@/lib/supabase/admin";
+
+const hasSupabaseService = hasPublicSupabase || hasServiceKey;
 
 export const dynamic = "force-dynamic";
 

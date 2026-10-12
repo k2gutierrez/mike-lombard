@@ -1,7 +1,11 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, parseCookieHeader, serializeCookieHeader, type CookieOptions } from "@supabase/ssr";
-import { appOrigin, supabasePublicKey, supabaseUrl } from "@/lib/config";
+import { appOrigin as publicOrigin, supabasePublicKey, supabaseUrl as publicUrl } from "@/lib/config";
+import { inlinedValue } from "@/lib/server/runtime-config";
+
+const supabaseUrl = inlinedValue("NEXT_PUBLIC_SUPABASE_URL") ?? publicUrl;
+const appOrigin = inlinedValue("APP_ORIGIN") ?? publicOrigin;
 
 /**
  * Completes a Supabase email sign-in.

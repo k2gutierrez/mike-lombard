@@ -4,6 +4,8 @@ node_modules/
 # build machine because the SSR runtime needs it; it must never reach git.
 .env*.local
 .env
+# Build artifact: holds inlined server secrets. Never commit it.
+src/lib/server/runtime-config.generated.ts
 .env.*
 !.env.example
 out/
