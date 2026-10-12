@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useReducedMotion } from "motion/react";
+import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 
 /**
  * Ambient canvas field.
@@ -20,7 +20,7 @@ export function AmbientField({
   className?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
 
   useEffect(() => {
     if (reduced) return;

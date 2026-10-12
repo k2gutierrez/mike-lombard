@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { Menu, X, Instagram, Twitter, Globe, ArrowUpRight } from "lucide-react";
 import type { SocialLink } from "@/lib/types";
+import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 
 const NAV = [
   { href: "/", label: "Index" },
@@ -39,7 +40,7 @@ export function SiteHeader({
   socials?: SocialLink[];
 }) {
   const pathname = usePathname();
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

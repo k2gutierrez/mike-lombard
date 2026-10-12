@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { ProjectCard } from "@/components/project-card";
+import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 import type { Project } from "@/lib/types";
 
 /**
@@ -19,7 +20,7 @@ export function WorksFilter({
   categories: string[];
   initialCategory?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const [active, setActive] = useState(initialCategory);
 
   const visible = useMemo(

@@ -185,7 +185,8 @@ Automated, reproducible with `npm test` (PGlite, a real Postgres engine):
 - Duplicate registrations are rejected by the database, and the throttle function
   denies the request over the limit.
 
-Verified end to end in a real browser against the live project (18 checks):
+Verified end to end in a real browser against the live project (22 acceptance
+checks in one clean run, all passing, zero browser and server errors):
 
 | Check | Result |
 | --- | --- |
@@ -205,7 +206,28 @@ Verified end to end in a real browser against the live project (18 checks):
 | Registrations table renders for the administrator | ✅ |
 | CSV export (200, includes `consent_at`) | ✅ |
 | Deleting a work removes it from the site and sweeps Storage | ✅ |
+| Drag a work up or down the list — UI order changes and survives a reload | ✅ |
 | Console / server errors during the whole run | none |
+
+Additional checks, run across **desktop (1440px) and mobile (390px)** and both
+motion preferences — 24 page/mode combinations, all clean:
+
+| Check | Result |
+| --- | --- |
+| Landing, works, biography, career, mint, `/admin/login` render with no console or hydration errors | ✅ 24/24 |
+| No hydration mismatch with `prefers-reduced-motion: reduce` | ✅ (see note) |
+| Canvas ambient field is disabled under reduced motion, active without it | ✅ |
+| Skip link is the first Tab stop; one `h1` per page; `lang` set | ✅ |
+| Zero video bytes requested before a play button is pressed | ✅ |
+| Images served lazy (`loading="lazy"`) | ✅ |
+
+**Note on the reduced-motion bug.** Motion's `useReducedMotion()` reads
+`matchMedia` synchronously on the client, so the first client render disagreed
+with the server for anyone who has "reduce motion" enabled — React reported a
+hydration mismatch and discarded the tree. `src/lib/use-reduced-motion.ts`
+starts at the static value (what the server renders) and corrects itself after
+mount, so hydration is stable and reduced-motion visitors get the static
+presentation.
 
 Not verified here: email delivery (no SMTP is configured, which is why the
 hand-off mode exists), and behaviour on AWS Amplify, which needs a deployment.

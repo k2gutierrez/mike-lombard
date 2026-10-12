@@ -2,13 +2,13 @@
 
 import {
   motion,
-  useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
   type Variants,
 } from "motion/react";
 import { useRef, type ReactNode } from "react";
+import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 
 /**
  * Reveal primitives.
@@ -40,7 +40,7 @@ export function Reveal({
   once = true,
   as = "div",
 }: RevealProps) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const MotionTag = motion[as] as typeof motion.div;
 
   if (reduced) {
@@ -83,7 +83,7 @@ export function RevealGroup({
   children: ReactNode;
   className?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   if (reduced) return <div className={className}>{children}</div>;
   return (
     <motion.div
@@ -105,7 +105,7 @@ export function RevealItem({
   children: ReactNode;
   className?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   if (reduced) return <div className={className}>{children}</div>;
   return (
     <motion.div className={className} variants={staggerItem}>
@@ -127,7 +127,7 @@ export function ParallaxMedia({
   className?: string;
   distance?: number;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -154,7 +154,7 @@ export function ParallaxMedia({
 
 /** Thin accent line that fills as the page is read. */
 export function ScrollProgress() {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 26, mass: 0.3 });
   if (reduced) return null;
@@ -169,7 +169,7 @@ export function ScrollProgress() {
 
 /** Route change transition: a quick lift, never a blocking curtain. */
 export function PageTransition({ children }: { children: ReactNode }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   if (reduced) return <>{children}</>;
   return (
     <motion.div

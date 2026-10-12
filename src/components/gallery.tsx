@@ -3,9 +3,10 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { MediaFrame, VideoPlayer } from "@/components/media";
+import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 import { formatBytes, formatDuration } from "@/lib/media";
 import type { MediaItem } from "@/lib/types";
 
@@ -24,7 +25,7 @@ export function Lightbox({
   onClose: () => void;
   onIndexChange: (index: number) => void;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = prefersReducedMotion();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
 
