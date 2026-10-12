@@ -31,20 +31,65 @@ selects it.
 ## 3. Environment variables
 
 Amplify console → **App settings → Environment variables**. Add every variable
-from `.env.example`. `NEXT_PUBLIC_*` values are baked in at build time, so they
-must be present **before the first build**.
+from `.env.example` that applies to your environment. They must be present
+**before the build**, because `NEXT_PUBLIC_*` values are inlined into the bundle
+while the others are handed to the runtime by the build step described below.
+
+> **This is the step that decides whether `/admin` works at all.** Amplify keeps
+> console variables in the *build* environment only. A Next.js server component
+> does not see them at runtime by default — that is deliberate, so build-time
+> secrets are not exposed to the SSR compute. The documented mechanism is to
+> write them to `.env.production` before building:
+> <https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html>
+>
+> `amplify.yml` already does this. If that step is removed, the public site still
+> renders but `/admin` shows **"Demo mode. Supabase is not configured…"** and
+> nobody can sign in, because `hasSupabaseService` is false on the server.
+
+### Required
 
 | Variable | Value | Notes |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` | public |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` | public |
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ…` | **secret**, server only |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://zifpnidxmvofiqqbekhe.supabase.co` | public; **the build fails without it** |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` | public; **the build fails without it** |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ…` | **secret, server only**. Without it the panel runs in demo mode |
 | `NEXT_PUBLIC_SITE_URL` | `https://your-domain` | no trailing slash |
-| `APP_ORIGIN` | `https://your-domain` | used for the sign-in redirect |
-| `ML_ADMIN_EMAILS` | artist email | optional once the role row exists |
-| `ML_AUTH_MODE` | `handoff` | `email` once SMTP exists |
-| `ML_HASH_SALT` | random string | throttle hash salt |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Reown project id | optional |
+| `APP_ORIGIN` | `https://your-domain` | used for the sign-in redirect. If it stays `localhost`, sign-in bounces |
+
+### Recommended
+
+| Variable | Value | Notes |
+| --- | --- | --- |
+| `ML_ADMIN_EMAILS` | `minglesnft@gmail.com` | allowlist for onboarding. The role already exists in `ml_admin_roles`, so this is only needed for new admins |
+| `ML_AUTH_MODE` | `handoff` | `email` once SMTP is configured |
+| `ML_HASH_SALT` | random string | salt for throttle hashes. Rotating it only resets counters |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Reown project id | optional; enables the wallet connect modal on `/mint` |
+
+### Only if you need them
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_ML_IMAGE_TRANSFORMS` | `0` | `1` makes Supabase Storage resize images (paid plan) |
+| `APECHAIN_RPC_URL` | public endpoint | only for wallet reads on `/mint` |
+| `NEXT_PUBLIC_APECHAIN_RPC_URL` | public endpoint | browser-side equivalent |
+| `ML_SITE_ID` / `ML_MEDIA_BUCKET` / `ML_MEDIA_PREFIX` | `mike-lombard` / `ml-media` / `mike-lombard` | namespacing; leave the defaults |
+
+**Do not add `SUPABASE_ACCESS_TOKEN`** to Amplify: it is only for running
+`npm run db:apply` from a trusted machine, and it can change your database schema.
+
+### How to confirm the build picked them up
+
+The build log prints one line per expected variable:
+
+```
+env NEXT_PUBLIC_SUPABASE_URL: set
+env SUPABASE_SERVICE_ROLE_KEY: set
+env ML_ADMIN_EMAILS: set
+vars written to .env.production: 9
+```
+
+If any line says `MISSING`, the variable is not in the Amplify environment (check
+the branch scoping) and it must be added before the next build.
 
 Do **not** add `SUPABASE_ACCESS_TOKEN` here: it is only needed on the machine
 that runs `npm run db:apply`.
@@ -138,6 +183,8 @@ npm run build
 | Images 500 on Amplify but fine locally | `sharp` missing. It is an optional dependency; check the install log. |
 | Sign-in redirects to `localhost` | `APP_ORIGIN` in the Amplify environment still points at localhost. |
 | `/admin` redirects back to `/admin/login` | `ML_ADMIN_EMAILS` empty and no row in `ml_admin_roles` for that account. |
+| `/admin` shows **"Demo mode. Supabase is not configured…"** | The `.env.production` step is missing from `amplify.yml`, or `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` are not set in the Amplify environment. This is the single most common deployment failure of this project. |
+| Build fails with `FATAL: NEXT_PUBLIC_SUPABASE_URL is not set` | Working as intended: the build stops instead of deploying a site that silently runs in demo mode. |
 
 ## 8. Rollback
 
