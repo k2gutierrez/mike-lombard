@@ -38,13 +38,23 @@ while the others are handed to the runtime by the build step described below.
 > **This is the step that decides whether `/admin` works at all.** Amplify keeps
 > console variables in the *build* environment only. A Next.js server component
 > does not see them at runtime by default — that is deliberate, so build-time
-> secrets are not exposed to the SSR compute. The documented mechanism is to
-> write them to `.env.production` before building:
-> <https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html>
+> secrets are not exposed to the SSR compute.
 >
-> `amplify.yml` already does this. If that step is removed, the public site still
-> renders but `/admin` shows **"Demo mode. Supabase is not configured…"** and
-> nobody can sign in, because `hasSupabaseService` is false on the server.
+> Two mechanisms are in place, because the first one alone was not enough:
+>
+> 1. `amplify.yml` writes the variables to `.env.production` before building, the
+>    mechanism AWS documents:
+>    <https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html>
+> 2. `npm run build` first runs `scripts/generate-runtime-config.mjs`, which bakes
+>    the server values into a generated module that becomes part of the bundle
+>    (`src/lib/server/runtime-config.generated.ts`, gitignored). This is what
+>    actually fixed production: the `.env.production` file is written in the build
+>    workspace and **did not survive into the packaged SSR runtime**, so the
+>    service-role key was present at build time and missing at run time.
+>
+> Inlining cannot be lost by packaging. If both steps are removed, the public site
+> still renders but `/admin` shows **"Demo mode. Supabase is not configured…"** and
+> nobody can sign in.
 
 ### Required
 
