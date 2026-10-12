@@ -165,7 +165,18 @@ registration is interest only, guarantees no allocation, and that contract, pric
 and date are undefined. Uncheck the provisional flag in the admin panel only when
 the artist has approved every text.
 
-## 8. Documentation
+## 8. Handover notes
+
+- This folder is its own Git repository with one commit. `.env.local` is
+  gitignored and already present locally; only `.env.example` is tracked.
+- The Supabase migration has **not** been applied to the live project yet — run
+  `SUPABASE_ACCESS_TOKEN=sbp_... npm run db:apply` (or paste the SQL in the
+  dashboard). `npm run check:backend` tells you exactly what is still missing.
+- The admin panel was verified visually in demo mode; the publish/upload flow
+  against real Supabase must be re-checked once the migration is applied. The
+  checklist is in [docs/04-AMPLIFY.md](docs/04-AMPLIFY.md) §6.
+
+## 9. Documentation
 
 1. [Setup and Supabase](docs/02-SUPABASE.md) — project, migration, auth, storage.
 2. [Admin manual for Mike](docs/03-ADMIN-MANUAL.md) — how to publish content.
