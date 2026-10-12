@@ -67,9 +67,21 @@ export function configurationReport() {
     if (process.env[name]) environment.push(name);
   }
 
+  // Every other variable this process can see. Amplify always injects a large
+  // set of its own (AWS_*, _HANDLER, LAMBDA_*…), so the list is grouped and
+  // capped. Names only — a typo like "SUPABASE_SERVICE_ROLE_KEY " or
+  // "SUPABASE_SERVICE_KEY" is invisible unless the names are listed.
+  const interesting = Object.keys(process.env)
+    .filter((key) => /SUPABASE|ML_|APP_ORIGIN|SITE_URL/i.test(key))
+    .filter((key) => !probe.includes(key as (typeof probe)[number]))
+    .sort()
+    .slice(0, 30);
+
   return {
     inlinedKeys: inlined,
     environmentKeys: environment,
+    /** Config-looking variables whose names we do not expect. Suspect typos. */
+    unexpectedConfigKeys: interesting,
     /** Where the service-role key was found, if anywhere. */
     serviceKeySource: inlinedValue("SUPABASE_SERVICE_ROLE_KEY")
       ? "build"
