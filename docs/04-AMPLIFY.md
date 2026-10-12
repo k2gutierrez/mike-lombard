@@ -140,13 +140,28 @@ that runs `npm run db:apply`.
 
 ## 6. Post-deploy checks
 
-Run these against the deployed URL:
+The fastest way to know whether the server can reach Supabase:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://your-domain/
-curl -s -o /dev/null -w "%{http_code}\n" https://your-domain/works
 curl -s https://your-domain/api/mint
 ```
+
+```json
+{"ok":true,"origin":"https://your-domain","supabase":true}
+```
+
+* `"supabase":true` → the runtime has the credentials. `/admin` will work.
+* `"supabase":false` → the SSR runtime did **not** get them. `/admin` will show
+  "Demo mode" and nobody can sign in. Almost always means the build did not run
+  the `.env.production` step in `amplify.yml`, or the variables are missing in the
+  Amplify console.
+* `"origin"` should be your public domain. If it still shows the
+  `*.amplifyapp.com` host, `APP_ORIGIN` needs updating.
+
+Note that `origin` and `supabase` come from `GET /api/mint`, which is public and
+returns only those two non-secret values.
+
+Then, in a browser:
 
 Then in a browser:
 
