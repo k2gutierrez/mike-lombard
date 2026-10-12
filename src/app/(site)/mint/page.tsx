@@ -4,6 +4,7 @@ import { PageTransition, PreviewBanner, Reveal } from "@/components/effects";
 import { MintForm } from "@/components/mint/mint-form";
 import { loadSite } from "@/lib/load-content";
 import { resolvePreview } from "@/lib/server/preview";
+import { serverConfig } from "@/lib/server/runtime-config";
 
 // Note: no `revalidate` here on purpose. This route reads `searchParams`
 // (`?preview=1`), and a route-level cache could hand a non-preview render to an
@@ -124,7 +125,17 @@ export default async function MintPage({
 
           <Reveal delay={0.12}>
             <div className="lg:sticky lg:top-28">
-              <MintForm mint={mint} />
+              {/*
+                The wallet flag is decided on the server and passed down, so the
+                server and the client always agree on whether to mount wallet
+                code. Deriving it independently in the component caused a
+                hydration mismatch whenever the build had the value and the
+                runtime did not.
+              */}
+              <MintForm
+                mint={mint}
+                walletEnabled={Boolean(serverConfig.walletConnectProjectId)}
+              />
             </div>
           </Reveal>
         </div>

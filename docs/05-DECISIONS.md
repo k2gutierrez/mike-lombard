@@ -100,6 +100,22 @@ sections in a full-page screenshot — a real accessibility and SEO risk for
 exactly the content the site exists to show. Under `prefers-reduced-motion` the
 component renders the final state with no animation at all.
 
+## Never call a wagmi hook outside its provider
+
+`WalletField` originally called `useAccount`, and it was rendered both inside and
+outside `WagmiProvider` depending on whether a WalletConnect project id existed.
+On a deployment where the value was present at build time but missing at runtime,
+the server rendered the plain branch and the client the wallet branch: the whole
+`/mint` page died with `WagmiProviderNotFoundError` and a hydration mismatch.
+
+The rule now:
+
+* `wallet-field.tsx` has **no** framework hooks and is safe to render anywhere;
+* `wallet-field-connected.tsx` is the only file that touches wagmi, and it is
+  mounted **only** inside `WalletProvider`;
+* whether to mount wallet code at all is decided **on the server** and passed down
+  as a prop, so both renders always agree.
+
 ## Out of scope, on purpose
 
 - **No transcoding, no video CDN, no HLS.** MP4/WebM served straight from

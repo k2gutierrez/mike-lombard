@@ -4,21 +4,26 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, Info, Loader2, ShieldCheck } from "lucide-react";
 import { WalletField } from "@/components/mint/wallet-field";
-import { walletConnectProjectId } from "@/lib/config";
 import { normalizeEmail, validateEmail } from "@/lib/validation";
 import type { SiteContent } from "@/lib/types";
 
 /**
  * Wallet chrome is loaded lazily and only when a WalletConnect project id
  * exists. `ssr: false` keeps wagmi/RainbowKit out of the server bundle.
+ *
+ * The two dynamic imports are mounted together or not at all: the connected
+ * field calls wagmi hooks, so rendering it without its provider throws
+ * `WagmiProviderNotFoundError` and takes the whole page down. The plain field in
+ * `wallet-field.tsx` has no hooks and is safe in either case.
  */
 const WalletProvider = dynamic(
   () => import("@/components/mint/wallet-provider").then((mod) => mod.WalletProvider),
   { ssr: false },
 );
 
-const WalletFieldLazy = dynamic(
-  () => import("@/components/mint/wallet-field").then((mod) => mod.WalletField),
+const WalletFieldConnected = dynamic(
+  () =>
+    import("@/components/mint/wallet-field-connected").then((mod) => mod.WalletFieldConnected),
   { ssr: false },
 );
 
@@ -28,7 +33,14 @@ type Status =
   | { state: "done"; message: string; duplicate: boolean }
   | { state: "error"; message: string; field?: string };
 
-export function MintForm({ mint }: { mint: SiteContent["mint"] }) {
+export function MintForm({
+  mint,
+  walletEnabled = false,
+}: {
+  mint: SiteContent["mint"];
+  /** Decided on the server so both renders agree. */
+  walletEnabled?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [wallet, setWallet] = useState("");
   const [walletSource, setWalletSource] = useState<"manual" | "walletconnect" | "injected">("manual");
@@ -43,8 +55,6 @@ export function MintForm({ mint }: { mint: SiteContent["mint"] }) {
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
-
-  const walletEnabled = Boolean(walletConnectProjectId);
 
   const content = (
     <form
@@ -171,7 +181,7 @@ export function MintForm({ mint }: { mint: SiteContent["mint"] }) {
             </div>
 
             {walletEnabled ? (
-              <WalletFieldLazy
+              <WalletFieldConnected
                 value={wallet}
                 onChange={(next, source) => {
                   setWallet(next);

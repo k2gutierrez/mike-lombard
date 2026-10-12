@@ -36,6 +36,10 @@ export const serverConfig = {
     inlinedValue("SUPABASE_SERVICE_ROLE_KEY") ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   appOrigin: inlinedValue("APP_ORIGIN") ?? process.env.APP_ORIGIN ?? "",
   siteUrl: inlinedValue("NEXT_PUBLIC_SITE_URL") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "",
+  walletConnectProjectId:
+    inlinedValue("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID") ??
+    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
+    "",
 } as const;
 
 /** True when the server can talk to Supabase with full privileges. */
@@ -58,6 +62,7 @@ export function configurationReport() {
     "ML_ADMIN_EMAILS",
     "ML_AUTH_MODE",
     "ML_HASH_SALT",
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
   ] as const;
 
   const inlined: string[] = [];

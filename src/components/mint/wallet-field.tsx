@@ -1,42 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useDisconnect } from "wagmi";
+import { useState } from "react";
 import { Check, Link2, Unplug } from "lucide-react";
 import { normalizeEvmAddress } from "@/lib/validation";
 
+export type WalletSource = "manual" | "walletconnect" | "injected";
+
+export type WalletFieldProps = {
+  value: string;
+  onChange: (value: string, source: WalletSource) => void;
+  error?: string | null;
+  disabled?: boolean;
+  /** True when a wallet is connected and filled the field. */
+  connected?: boolean;
+  /** Clears the field and disconnects, when a wallet is connected. */
+  onDisconnect?: () => void;
+  /** Rendered next to the label: the ConnectButton, only when wagmi is mounted. */
+  connectSlot?: React.ReactNode;
+};
+
 /**
- * Optional wallet connection.
+ * Wallet address field.
  *
- * Connecting (or typing) an address proves nothing about ownership — it is only
- * a convenience fill for the field. The copy says so, and no signature is
- * requested anywhere in this project.
+ * This component deliberately contains **no wagmi hooks**. It is rendered both
+ * with and without a wallet provider, and calling `useAccount` outside
+ * `WagmiProvider` throws `WagmiProviderNotFoundError` — which took down the whole
+ * `/mint` page on a deployment where the wallet was not configured. Anything that
+ * needs wagmi lives in `wallet-field-connected.tsx`, which is only ever mounted
+ * inside the provider.
  */
 export function WalletField({
   value,
   onChange,
   error,
   disabled,
-}: {
-  value: string;
-  onChange: (value: string, source: "manual" | "walletconnect" | "injected") => void;
-  error?: string | null;
-  disabled?: boolean;
-}) {
-  const { address, isConnected, connector } = useAccount();
-  const { disconnect } = useDisconnect();
-  const lastFilled = useRef<string | null>(null);
+  connected = false,
+  onDisconnect,
+  connectSlot,
+}: WalletFieldProps) {
   const [localError, setLocalError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isConnected || !address) return;
-    if (lastFilled.current === address) return;
-    const parsed = normalizeEvmAddress(address);
-    if (!parsed.ok) return;
-    lastFilled.current = address;
-    onChange(parsed.address, connector?.id === "walletConnect" ? "walletconnect" : "injected");
-  }, [address, isConnected, connector?.id, onChange]);
 
   return (
     <div>
@@ -45,22 +47,19 @@ export function WalletField({
           Wallet address (EVM, ApeChain compatible)
         </label>
         <div className="flex items-center gap-2">
-          {isConnected ? (
+          {connected && onDisconnect ? (
             <button
               type="button"
               onClick={() => {
-                lastFilled.current = null;
-                disconnect();
-                onChange("", "manual");
+                setLocalError(null);
+                onDisconnect();
               }}
               className="chip transition-colors hover:border-bone hover:text-bone"
             >
               <Unplug size={11} aria-hidden="true" /> Disconnect
             </button>
           ) : (
-            <div className="[&_button]:border [&_button]:border-edge-soft [&_button]:bg-transparent [&_button]:font-mono [&_button]:text-[0.625rem] [&_button]:tracking-[0.14em] [&_button]:uppercase [&_button]:text-bone">
-              <ConnectButton chainStatus="none" showBalance={false} accountStatus="address" />
-            </div>
+            connectSlot
           )}
         </div>
       </div>
@@ -93,7 +92,7 @@ export function WalletField({
       />
 
       <p id="wallet-help" className="mt-2 text-xs leading-relaxed text-bone-faint">
-        {isConnected ? (
+        {connected ? (
           <span className="inline-flex items-center gap-1.5 text-accent">
             <Check size={11} aria-hidden="true" /> Filled from your connected wallet.
           </span>
