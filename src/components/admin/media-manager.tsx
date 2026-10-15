@@ -418,6 +418,8 @@ function SortableMedia({
     id: item.id,
   });
   const [open, setOpen] = useState(false);
+  // A row can outlive its file; saying so beats a broken image icon.
+  const [broken, setBroken] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -431,7 +433,18 @@ function SortableMedia({
       className={`admin-panel flex flex-col ${isDragging ? "dragging" : ""}`}
     >
       <div className="relative aspect-4/5 bg-slate-ink">
-        {item.kind === "video" ? (
+        {broken ? (
+          <div className="grid h-full w-full place-items-center border border-alert/40 bg-alert/10 p-3 text-center">
+            <div>
+              <p className="font-mono text-[0.5625rem] tracking-[0.14em] text-alert uppercase">
+                File missing
+              </p>
+              <p className="mt-2 text-[0.625rem] leading-relaxed text-bone-faint">
+                Upload it again, or delete this entry.
+              </p>
+            </div>
+          </div>
+        ) : item.kind === "video" ? (
           <video
             className="h-full w-full object-cover"
             src={item.url ? `${item.url}#t=${POSTER_TIME}` : undefined}
@@ -439,6 +452,7 @@ function SortableMedia({
             preload="metadata"
             muted
             playsInline
+            onError={() => setBroken(true)}
           />
         ) : (
           <Image
@@ -448,6 +462,7 @@ function SortableMedia({
             sizes="200px"
             className="object-cover"
             unoptimized
+            onError={() => setBroken(true)}
           />
         )}
 

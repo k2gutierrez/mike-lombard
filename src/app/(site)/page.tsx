@@ -9,7 +9,7 @@ import {
   RevealGroup,
   RevealItem,
 } from "@/components/effects";
-import { VideoPlayer } from "@/components/media";
+import { MediaFrame, VideoPlayer } from "@/components/media";
 import { ProjectCard } from "@/components/project-card";
 import { featuredProjects, loadSite } from "@/lib/load-content";
 import { resolvePreview } from "@/lib/server/preview";
@@ -129,19 +129,17 @@ export default async function HomePage({
                       className="h-full w-full"
                     />
                   ) : (
-                    <div
-                      className="relative w-full"
-                      style={{ aspectRatio: aspectRatio(heroMedia) }}
-                    >
-                      <Image
-                        src={heroMedia.url ?? ""}
-                        alt={heroMedia.alt || `${content.hero.title} — hero artwork`}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 46vw"
-                        priority
-                        className="object-cover"
-                      />
-                    </div>
+                    /* MediaFrame, not a bare next/image: it reports a missing
+                       object instead of rendering a silent empty frame, which is
+                       what made "I changed the photo and nothing happens" so
+                       confusing. */
+                    <MediaFrame
+                      media={heroMedia}
+                      sizes="(max-width: 1024px) 100vw, 46vw"
+                      priority
+                      interactive={false}
+                      className="w-full"
+                    />
                   )
                 ) : (
                   <div

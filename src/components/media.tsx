@@ -14,6 +14,30 @@ import type { MediaItem } from "@/lib/types";
  * `src`, only a poster. `preload="none"` plus a poster keeps a gallery of ten
  * clips from pulling hundreds of megabytes on first paint.
  */
+/**
+ * Shown when an object is recorded in the database but Storage cannot serve it.
+ *
+ * This is not hypothetical: seven rows pointed at files that were never in the
+ * bucket, and the interface rendered a silent empty frame — the artist reported
+ * "I change the photo and nothing happens". A missing file must be visible and
+ * attributable, in the panel and on the site.
+ */
+export function MissingMedia({ media, note }: { media: Pick<MediaItem, "alt">; note?: string }) {
+  return (
+    <div className="grid h-full w-full place-items-center border border-alert/40 bg-alert/5 px-4 text-center">
+      <div className="max-w-[18rem]">
+        <p className="font-mono text-[0.625rem] tracking-[0.16em] text-alert uppercase">
+          File missing
+        </p>
+        <p className="mt-2 truncate text-xs text-bone-dim">{media.alt || "(no name)"}</p>
+        <p className="mt-2 text-xs leading-relaxed text-bone-faint">
+          {note ?? "The record exists but the file is not in storage. Delete it and upload it again."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function MediaFrame({
   media,
   sizes = "100vw",
@@ -30,6 +54,7 @@ export function MediaFrame({
   onOpen?: () => void;
 }) {
   const ratio = aspectRatio(media);
+  const [failed, setFailed] = useState(false);
 
   if (media.kind === "video") {
     return (
@@ -39,6 +64,14 @@ export function MediaFrame({
         className={className}
         interactive={interactive}
       />
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className={`relative ${className}`} style={{ aspectRatio: ratio }}>
+        <MissingMedia media={media} />
+      </div>
     );
   }
 
@@ -54,6 +87,7 @@ export function MediaFrame({
         sizes={sizes}
         priority={priority}
         className="object-cover"
+        onError={() => setFailed(true)}
         placeholder={media.width && media.height ? "blur" : "empty"}
         blurDataURL={
           media.width && media.height

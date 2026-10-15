@@ -35,12 +35,15 @@ async function migrate() {
     alter table storage.objects enable row level security;
     grant usage on schema public, auth, storage to anon, authenticated, service_role;
   `);
-  await db.exec(
-    await readFile(
-      new URL("../supabase/migrations/202610120001_mike_lombard_foundation.sql", import.meta.url),
-      "utf8",
-    ),
-  );
+  for (const file of [
+    "202610120001_mike_lombard_foundation.sql",
+    "202610120002_publish_intent.sql",
+    "202610120003_draft_rev_bigint.sql",
+  ]) {
+    await db.exec(
+      await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8"),
+    );
+  }
   // Supabase grants these by default; PGlite needs them after the tables exist.
   await db.exec(`
     grant select on all tables in schema public to anon, authenticated;
@@ -215,6 +218,35 @@ test("mint registrations reject duplicates and stay admin-only", async () => {
     assert.equal(rate.rows[0].allowed, true);
     const second = await db.query("select * from public.ml_rate_limit_hit('mint_ip','hash-a',3600,1)");
     assert.equal(second.rows[0].allowed, false, "the second hit exceeds a limit of 1");
+  } finally {
+    await db.close();
+  }
+});
+
+test("saving the site document does not overflow the revision counter", async () => {
+  const db = await migrate();
+  try {
+    // The bug: a millisecond timestamp written into an `integer` column.
+    // The column must now accept it.
+    const huge = 1791838716564;
+    const widened = await db.query("select data_type from information_schema.columns where table_name = 'ml_site' and column_name = 'draft_rev'");
+    assert.equal(widened.rows[0].data_type, "bigint", "draft_rev must be bigint");
+    await db.query("update public.ml_site set draft_rev = $1 where id = 'mike-lombard'", [huge]);
+
+    // With the column widened to bigint and the counter owned by the function,
+    // saving twice simply increments.
+    const first = await db.query("select public.ml_save_site_content('mike-lombard', '{}'::jsonb) as rev");
+    const second = await db.query("select public.ml_save_site_content('mike-lombard', '{\"a\":1}'::jsonb) as rev");
+    assert.ok(Number(first.rows[0].rev) >= 1);
+    assert.equal(Number(second.rows[0].rev), Number(first.rows[0].rev) + 1, "the counter increments");
+
+    // And the function is not reachable from the browser.
+    await db.exec("set role anon");
+    await assert.rejects(
+      db.query("select public.ml_save_site_content('mike-lombard', '{}'::jsonb)"),
+      /permission denied/,
+    );
+    await db.exec("reset role");
   } finally {
     await db.close();
   }

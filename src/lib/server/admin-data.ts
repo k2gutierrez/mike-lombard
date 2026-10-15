@@ -177,15 +177,18 @@ export async function saveSiteContent(input: unknown): Promise<SiteContent> {
     demoStore.content = content;
     return content;
   }
-  const { error } = await supabase.from("ml_site").upsert(
-    {
-      id: SITE_ID,
-      draft: content,
-      draft_rev: Date.now(),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" },
-  );
+  /**
+   * The revision counter is bumped by the database, not by the application.
+   *
+   * It used to be `Date.now()`, a millisecond epoch (~1.79e12). The column was
+   * `integer` (max 2.1e9), so every save failed with `value "..." is out of range
+   * for type integer` and the panel silently kept nothing. Letting the database
+   * own the counter removes the unit mismatch for good.
+   */
+  const { error } = await supabase.rpc("ml_save_site_content", {
+    p_site_id: SITE_ID,
+    p_document: content,
+  });
   if (error) throw new Error(error.message);
   return content;
 }
