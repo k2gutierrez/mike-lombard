@@ -2,6 +2,7 @@ import { cleanHref, cleanOptionalText, cleanText, cleanUrl } from "@/lib/validat
 import { previewContent } from "@/lib/preview-content";
 import type {
   Fact,
+  NftItem,
   Project,
   SiteContent,
   SocialLink,
@@ -93,6 +94,7 @@ export function sanitizeSiteContent(input: unknown): SiteContent {
       ctaSecondaryHref: cleanHref(hero.ctaSecondaryHref, "/mint"),
       mediaId: cleanOptionalText(hero.mediaId, 60),
       posterMediaId: cleanOptionalText(hero.posterMediaId, 60),
+      studioLabel: cleanText(hero.studioLabel, 60) || base.hero.studioLabel,
     },
     featured: {
       title: cleanText(featured.title, 120) || base.featured.title,
@@ -107,15 +109,17 @@ export function sanitizeSiteContent(input: unknown): SiteContent {
     bio: {
       title: cleanText(bio.title, 120) || base.bio.title,
       portraitMediaId: cleanOptionalText(bio.portraitMediaId, 60),
+      artworkMediaId: cleanOptionalText(bio.artworkMediaId, 60),
       intro: cleanText(bio.intro, 400),
       body: cleanText(bio.body, 8000),
       visionTitle: cleanText(bio.visionTitle, 120) || base.bio.visionTitle,
       vision: cleanText(bio.vision, 4000),
-      minglesTitle: cleanText(bio.minglesTitle, 120) || base.bio.minglesTitle,
-      mingles: cleanText(bio.mingles, 4000),
+      collabTitle: cleanText(bio.collabTitle, 120) || base.bio.collabTitle,
+      collab: cleanText(bio.collab, 4000),
       facts: facts(bio.facts),
       socials: socials(bio.socials),
     },
+    nfts: sanitizeNfts(raw.nfts),
     career: {
       title: cleanText(career.title, 120) || base.career.title,
       intro: cleanText(career.intro, 400),
@@ -136,6 +140,42 @@ export function sanitizeSiteContent(input: unknown): SiteContent {
       socials: socials(footer.socials),
     },
     updatedAt: new Date().toISOString(),
+  };
+}
+
+/** Keeps the NFT list well-formed and free of half-written entries. */
+export function sanitizeNfts(input: unknown): { title: string; eyebrow: string; intro: string; note: string; items: NftItem[] } {
+  const raw = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+  const list = Array.isArray(raw.items) ? raw.items : [];
+
+  const items: NftItem[] = list
+    .map((entry, index) => {
+      if (!entry || typeof entry !== "object") return null;
+      const record = entry as Record<string, unknown>;
+      const title = cleanText(record.title, 160);
+      const mediaId = cleanOptionalText(record.mediaId, 60);
+      // An entry with neither a title nor an image is not a piece yet.
+      if (!title && !mediaId) return null;
+      const year = Number(record.year);
+      return {
+        id: cleanText(record.id, 60) || `nft-${index + 1}`,
+        title: title || "Untitled",
+        description: cleanOptionalText(record.description, 2000),
+        mediaId,
+        year: Number.isFinite(year) && year > 1800 && year < 2200 ? Math.round(year) : null,
+        edition: cleanOptionalText(record.edition, 80),
+        linkUrl: cleanUrl(record.linkUrl),
+      } satisfies NftItem;
+    })
+    .filter((item): item is NftItem => item !== null)
+    .slice(0, 200);
+
+  return {
+    title: cleanText(raw.title, 120) || previewContent.nfts.title,
+    eyebrow: cleanText(raw.eyebrow, 80),
+    intro: cleanText(raw.intro, 600),
+    note: cleanText(raw.note, 1200),
+    items,
   };
 }
 

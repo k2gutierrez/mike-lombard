@@ -1,10 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { Reveal } from "@/components/effects";
-import { aspectRatio } from "@/lib/media";
+import { MediaFrame } from "@/components/media";
 import { loadSite } from "@/lib/load-content";
-import { PageTransition, PreviewBanner } from "@/components/effects";
+import { PageTransition, PreviewBanner, Reveal } from "@/components/effects";
 import { resolvePreview } from "@/lib/server/preview";
 
 // Note: no `revalidate` here on purpose. This route reads `searchParams`
@@ -21,6 +19,14 @@ export default async function BiographyPage({
   const preview = await resolvePreview(params.preview === "1");
   const site = await loadSite({ includeDrafts: preview });
   const { content, siteMedia } = site;
+  /**
+   * Two images on purpose: one of his works and a photo of the artist himself.
+   * The request was explicit — the page should show the painting *and* the
+   * person behind it. Falls back gracefully when only one (or neither) is set.
+   */
+  const artwork = content.bio.artworkMediaId
+    ? siteMedia.find((item) => item.id === content.bio.artworkMediaId)
+    : undefined;
   const portrait = content.bio.portraitMediaId
     ? siteMedia.find((item) => item.id === content.bio.portraitMediaId)
     : undefined;
@@ -50,21 +56,37 @@ export default async function BiographyPage({
         <div>
           <Reveal>
             <div className="lg:sticky lg:top-28">
-              {portrait ? (
-                <div
-                  className="relative overflow-hidden border border-edge"
-                  style={{ aspectRatio: aspectRatio(portrait) }}
-                >
-                  <Image
-                    src={portrait.url ?? ""}
-                    alt={portrait.alt || "Portrait of the artist"}
-                    fill
+              {artwork ? (
+                <figure>
+                  <MediaFrame
+                    media={artwork}
                     sizes="(max-width: 1024px) 100vw, 32vw"
                     priority
-                    className="object-cover"
+                    interactive={false}
+                    className="border border-edge"
                   />
-                </div>
-              ) : (
+                  <figcaption className="mt-3 font-mono text-[0.5625rem] tracking-[0.16em] text-bone-faint uppercase">
+                    {artwork.caption || artwork.alt}
+                  </figcaption>
+                </figure>
+              ) : null}
+
+              {portrait ? (
+                <figure className={artwork ? "mt-6" : undefined}>
+                  <MediaFrame
+                    media={portrait}
+                    sizes="(max-width: 1024px) 100vw, 32vw"
+                    priority={!artwork}
+                    interactive={false}
+                    className="border border-edge"
+                  />
+                  <figcaption className="mt-3 font-mono text-[0.5625rem] tracking-[0.16em] text-bone-faint uppercase">
+                    The artist
+                  </figcaption>
+                </figure>
+              ) : null}
+
+              {!portrait && !artwork ? (
                 <div
                   className="grid place-items-center border border-dashed border-edge"
                   style={{ aspectRatio: "4 / 5" }}
@@ -73,7 +95,7 @@ export default async function BiographyPage({
                     Portrait pending
                   </span>
                 </div>
-              )}
+              ) : null}
 
               {content.bio.facts.length ? (
                 <dl className="mt-8 border-t border-edge">
@@ -135,9 +157,9 @@ export default async function BiographyPage({
             </Reveal>
             <Reveal delay={0.08}>
               <h2 className="font-display text-2xl tracking-tight">
-                {content.bio.minglesTitle}
+                {content.bio.collabTitle}
               </h2>
-              <p className="prose-ml mt-5">{content.bio.mingles}</p>
+              <p className="prose-ml mt-5">{content.bio.collab}</p>
               <Link href="/works" className="btn mt-8">
                 See the works
                 <ArrowUpRight size={14} aria-hidden="true" />

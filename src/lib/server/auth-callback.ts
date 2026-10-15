@@ -1,11 +1,10 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, parseCookieHeader, serializeCookieHeader, type CookieOptions } from "@supabase/ssr";
-import { appOrigin as publicOrigin, supabasePublicKey, supabaseUrl as publicUrl } from "@/lib/config";
+import { supabasePublicKey, supabaseUrl as publicUrl } from "@/lib/config";
 import { inlinedValue } from "@/lib/server/runtime-config";
 
 const supabaseUrl = inlinedValue("NEXT_PUBLIC_SUPABASE_URL") ?? publicUrl;
-const appOrigin = inlinedValue("APP_ORIGIN") ?? publicOrigin;
 
 /**
  * Completes a Supabase email sign-in.
@@ -61,8 +60,15 @@ export async function completeEmailSignIn(
     if (error) console.error("[auth] verifyOtp:", error.message);
   }
 
+  /**
+   * Redirect to the origin the request actually came in on, not to a configured
+   * one. `APP_ORIGIN` is the production domain, so using it here bounced a local
+   * sign-in to the deployed site and came back as `?error=expired` — the token
+   * had already been consumed. The origin of the request is always correct:
+   * localhost locally, the real domain in production.
+   */
   const url = new URL(request.url);
-  const target = new URL(ok ? "/admin" : "/admin/login", appOrigin || url.origin);
+  const target = new URL(ok ? "/admin" : "/admin/login", url.origin);
   if (!ok) target.searchParams.set("error", "expired");
 
   const response = NextResponse.redirect(target);

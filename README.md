@@ -60,10 +60,12 @@ document exists.
 | --- | --- |
 | `/` | Landing: administrable hero (image or silent looping video), selected works, biography teaser, career preview, mint call to action |
 | `/works` | Filterable gallery by category, all client-side |
+| `/nfts` | NFT pieces: image, title, description, edition and an optional on-chain link |
 | `/works/[slug]` | Project page: cover, story, ordered image/video gallery, lightbox viewer, related works, next work |
 | `/biography` | Portrait, story, artistic vision, relationship with Mingles, key facts, links |
 | `/career` | Editable timeline grouped by year (exhibitions, collaborations, milestones, press, residencies) |
 | `/mint` | Mint interest registration with server-side validation and anti-spam |
+| `/nfts` | Digital work, editable from a dedicated admin tab |
 | `?preview=1` | Draft preview on any page, for administrators only |
 
 **Admin panel (`/admin`)** — Supabase Auth, restricted by an allowlist plus a
@@ -75,7 +77,9 @@ role table:
   from Storage too).
 - Landing: hero title/subtitle/CTAs, hero image or video, poster, selected works
   with explicit order, section copy.
-- Biography, career timeline, mint copy, social links.
+- Biography (**photo of the artist plus one of his works**), career timeline, mint copy, social links.
+- NFTs: title, intro, and a list of pieces with image, description, year, edition and an optional link.
+- Every brand reference is editable: the "Studio" value in the hero stats is a field, not a constant.
 - Registrations: private list, filter, **CSV export**.
 - **Publish** promotes every draft at once and invalidates the public cache;
   **Revert** restores the last published site document.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -41,19 +42,21 @@ import type { AdminDocument } from "@/lib/server/admin-data";
 import type { AdminIdentity } from "@/lib/server/auth";
 import type {
   MediaItem,
+  NftItem,
   Project,
   SiteContent,
   TimelineEntry,
   TimelineKind,
 } from "@/lib/types";
 
-type Tab = "projects" | "site" | "bio" | "career" | "mint" | "people";
+type Tab = "projects" | "site" | "bio" | "career" | "nfts" | "mint" | "people";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "projects", label: "Works" },
   { id: "site", label: "Landing & featured" },
   { id: "bio", label: "Biography" },
   { id: "career", label: "Career" },
+  { id: "nfts", label: "NFTs" },
   { id: "mint", label: "Mint" },
   { id: "people", label: "Registrations" },
 ];
@@ -401,6 +404,20 @@ export function AdminApp({
             run={run}
             busy={busy}
             onSave={() => saveContent()}
+          />
+        ) : null}
+
+        {tab === "nfts" ? (
+          <NftsTab
+            content={content}
+            setContent={(next) => {
+              setContent(next);
+              setDirty(true);
+            }}
+            siteMedia={siteMedia}
+            setSiteMedia={setSiteMedia}
+            onSave={() => saveContent()}
+            busy={busy}
           />
         ) : null}
 
@@ -970,6 +987,15 @@ function SiteTab({
               className="field"
             />
           </Field>
+          <Field label="Studio (hero stat)" hint="Leave empty to hide this stat">
+            <input
+              value={content.hero.studioLabel}
+              onChange={(event) =>
+                patch({ hero: { ...content.hero, studioLabel: event.target.value } })
+              }
+              className="field"
+            />
+          </Field>
           <Field label="Hero subtitle">
             <textarea
               value={content.hero.subtitle}
@@ -1340,15 +1366,15 @@ function BioTab({
               </Field>
               <Field label="Third section title">
                 <input
-                  value={bio.minglesTitle}
-                  onChange={(event) => patch({ minglesTitle: event.target.value })}
+                  value={bio.collabTitle}
+                  onChange={(event) => patch({ collabTitle: event.target.value })}
                   className="field"
                 />
               </Field>
               <Field label="Third section text">
                 <textarea
-                  value={bio.mingles}
-                  onChange={(event) => patch({ mingles: event.target.value })}
+                  value={bio.collab}
+                  onChange={(event) => patch({ collab: event.target.value })}
                   rows={6}
                   className="field resize-none"
                 />
@@ -1484,7 +1510,7 @@ function BioTab({
               onCoverChange={(mediaId) => patch({ portraitMediaId: mediaId })}
             />
           </div>
-          <Field label="Portrait media">
+          <Field label="Photo of the artist" hint="Shown first, next to his work">
             <select
               value={bio.portraitMediaId ?? ""}
               onChange={(event) => patch({ portraitMediaId: event.target.value || null })}
@@ -1496,6 +1522,25 @@ function BioTab({
                   {item.alt || item.path}
                 </option>
               ))}
+            </select>
+          </Field>
+          <Field
+            label="One of his works"
+            hint="Shown next to the photo, so the page has both the person and the painting"
+          >
+            <select
+              value={bio.artworkMediaId ?? ""}
+              onChange={(event) => patch({ artworkMediaId: event.target.value || null })}
+              className="field mt-4"
+            >
+              <option value="">None</option>
+              {siteMedia
+                .filter((item) => item.id !== bio.portraitMediaId)
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.alt || item.path}
+                  </option>
+                ))}
             </select>
           </Field>
         </section>
@@ -1862,6 +1907,222 @@ function TimelineRow({
         </div>
       ) : null}
     </li>
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+/* NFTs                                                                      */
+/* ------------------------------------------------------------------------- */
+
+function emptyNft(index: number): NftItem {
+  return {
+    id: `nft-${Date.now().toString(36)}-${index}`,
+    title: "",
+    description: null,
+    mediaId: null,
+    year: new Date().getFullYear(),
+    edition: null,
+    linkUrl: null,
+  };
+}
+
+/**
+ * Editor for the NFT section.
+ *
+ * Each piece is title + image + optional story, edition and link. Nothing about
+ * a contract, a price or a date is assumed or required: the artist writes what
+ * is true and leaves the rest empty.
+ */
+function NftsTab({
+  content,
+  setContent,
+  siteMedia,
+  setSiteMedia,
+  onSave,
+  busy,
+}: {
+  content: SiteContent;
+  setContent: (next: SiteContent) => void;
+  siteMedia: MediaItem[];
+  setSiteMedia: (next: MediaItem[]) => void;
+  onSave: () => void;
+  busy: string | null;
+}) {
+  const nfts = content.nfts;
+  const patch = (partial: Partial<SiteContent["nfts"]>) =>
+    setContent({ ...content, nfts: { ...nfts, ...partial } });
+
+  const patchItem = (id: string, changes: Partial<NftItem>) =>
+    patch({ items: nfts.items.map((item) => (item.id === id ? { ...item, ...changes } : item)) });
+
+  const move = (index: number, delta: number) => {
+    const next = [...nfts.items];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    patch({ items: next });
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="admin-panel p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="eyebrow">NFT section</p>
+          <SaveButton onSave={onSave} busy={busy === "content"} />
+        </div>
+        <p className="mt-3 max-w-3xl text-xs leading-relaxed text-bone-faint">
+          Appears on the landing page and on its own page at <span className="font-mono">/nfts</span>.
+          Do not add a price, a contract address or a mint date unless they are real.
+        </p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <Field label="Eyebrow">
+            <input value={nfts.eyebrow} onChange={(e) => patch({ eyebrow: e.target.value })} className="field" />
+          </Field>
+          <Field label="Title">
+            <input value={nfts.title} onChange={(e) => patch({ title: e.target.value })} className="field" />
+          </Field>
+          <Field label="Intro">
+            <textarea value={nfts.intro} onChange={(e) => patch({ intro: e.target.value })} rows={3} className="field resize-none" />
+          </Field>
+          <Field label="Note under the grid" hint="Provenance or context, in the artist's words">
+            <textarea value={nfts.note} onChange={(e) => patch({ note: e.target.value })} rows={3} className="field resize-none" />
+          </Field>
+        </div>
+      </section>
+
+      <section className="admin-panel p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="eyebrow">Pieces ({nfts.items.length})</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => patch({ items: [...nfts.items, emptyNft(nfts.items.length + 1)] })}
+              className="btn px-3 py-2"
+            >
+              <Plus size={13} aria-hidden="true" /> Add piece
+            </button>
+            <SaveButton onSave={onSave} busy={busy === "content"} />
+          </div>
+        </div>
+
+        <ul className="mt-5 flex flex-col gap-3">
+          {nfts.items.map((item, index) => {
+            const media = siteMedia.find((m) => m.id === item.mediaId);
+            return (
+              <li key={item.id} className="border border-edge p-4">
+                <div className="flex items-start gap-4">
+                  <div className="relative hidden size-24 shrink-0 overflow-hidden border border-edge bg-pit sm:block">
+                    {media?.url ? (
+                      <Image src={media.url} alt={media.alt} fill sizes="96px" className="object-cover" unoptimized />
+                    ) : (
+                      <span className="grid h-full place-items-center px-1 text-center font-mono text-[0.5rem] text-bone-faint uppercase">
+                        No image
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1 grid gap-3 md:grid-cols-2">
+                    <Field label="Title">
+                      <input
+                        value={item.title}
+                        onChange={(e) => patchItem(item.id, { title: e.target.value })}
+                        className="field"
+                        placeholder="Piece title"
+                      />
+                    </Field>
+                    <Field label="Image">
+                      <select
+                        value={item.mediaId ?? ""}
+                        onChange={(e) => patchItem(item.id, { mediaId: e.target.value || null })}
+                        className="field"
+                      >
+                        <option value="">None</option>
+                        {siteMedia.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.alt || m.path}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Description">
+                      <textarea
+                        value={item.description ?? ""}
+                        onChange={(e) => patchItem(item.id, { description: e.target.value })}
+                        rows={2}
+                        className="field resize-none"
+                        placeholder="What the piece is, in one or two sentences"
+                      />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Year">
+                        <input
+                          type="number"
+                          value={item.year ?? ""}
+                          onChange={(e) => patchItem(item.id, { year: e.target.value ? Number(e.target.value) : null })}
+                          className="field"
+                        />
+                      </Field>
+                      <Field label="Edition">
+                        <input
+                          value={item.edition ?? ""}
+                          onChange={(e) => patchItem(item.id, { edition: e.target.value })}
+                          className="field"
+                          placeholder="1/1"
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Link" hint="https:// only. Leave empty if there is none">
+                      <input
+                        value={item.linkUrl ?? ""}
+                        onChange={(e) => patchItem(item.id, { linkUrl: e.target.value })}
+                        className="field font-mono text-sm"
+                        placeholder="https://"
+                      />
+                    </Field>
+                    <div className="flex items-end gap-2">
+                      <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="btn px-3 py-2">
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => move(index, 1)}
+                        disabled={index === nfts.items.length - 1}
+                        className="btn px-3 py-2"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => patch({ items: nfts.items.filter((n) => n.id !== item.id) })}
+                        className="btn px-3 py-2 text-alert"
+                      >
+                        <Trash2 size={13} aria-hidden="true" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {!nfts.items.length ? (
+          <p className="mt-4 border border-dashed border-edge px-4 py-8 text-center text-xs text-bone-faint">
+            No pieces yet. Use “Add piece” and pick an image.
+          </p>
+        ) : null}
+      </section>
+
+      <section className="admin-panel p-5">
+        <p className="eyebrow">Images for the NFT section</p>
+        <p className="mt-2 text-xs text-bone-faint">
+          Upload here, then choose each image in the piece above.
+        </p>
+        <div className="mt-5">
+          <MediaManager items={siteMedia} scope="site" onChange={setSiteMedia} />
+        </div>
+      </section>
+    </div>
   );
 }
 

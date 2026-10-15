@@ -105,10 +105,12 @@ export default async function HomePage({
                     {timeline.length.toString().padStart(2, "0")}
                   </dd>
                 </div>
-                <div>
-                  <dt className="eyebrow">Studio</dt>
-                  <dd className="mt-2 font-display text-2xl">Mingles</dd>
-                </div>
+                {content.hero.studioLabel ? (
+                  <div>
+                    <dt className="eyebrow">Studio</dt>
+                    <dd className="mt-2 font-display text-2xl">{content.hero.studioLabel}</dd>
+                  </div>
+                ) : null}
               </dl>
             </Reveal>
           </div>
@@ -284,6 +286,68 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+
+      {/* ------------------------------------------------------------ nfts */}
+      {content.nfts.items.length ? (
+        <section className="shell py-24 lg:py-32">
+          <div className="flex flex-col justify-between gap-6 border-b border-edge pb-8 md:flex-row md:items-end">
+            <div className="max-w-2xl">
+              <Reveal>
+                <p className="eyebrow">{content.nfts.eyebrow || "NFTs"}</p>
+              </Reveal>
+              <Reveal delay={0.05}>
+                <h2 className="mt-5">{content.nfts.title}</h2>
+              </Reveal>
+              {content.nfts.intro ? (
+                <Reveal delay={0.1}>
+                  <p className="mt-5 max-w-xl text-base text-bone-dim">{content.nfts.intro}</p>
+                </Reveal>
+              ) : null}
+            </div>
+            <Reveal delay={0.1}>
+              <Link href="/nfts" className="btn shrink-0">
+                All pieces
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </Reveal>
+          </div>
+
+          <ul className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {content.nfts.items.slice(0, 3).map((item, index) => {
+              const media = siteMedia.find((m) => m.id === item.mediaId);
+              return (
+                <Reveal as="li" key={item.id} delay={0.04 * index}>
+                  <Link href="/nfts" className="card-hover group block">
+                    <div className="relative aspect-4/5 overflow-hidden border border-edge bg-pit">
+                      {media ? (
+                        <MediaFrame
+                          media={media}
+                          sizes="(max-width: 640px) 100vw, 33vw"
+                          interactive={false}
+                          className="h-full w-full"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center">
+                          <span className="font-mono text-[0.625rem] tracking-[0.16em] text-bone-faint uppercase">
+                            Image pending
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="mt-4 font-display text-lg tracking-tight group-hover:text-accent">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 font-mono text-[0.5625rem] tracking-[0.16em] text-bone-faint uppercase">
+                      {[item.year, item.edition].filter(Boolean).join(" · ") || "NFT"}
+                    </p>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       {/* -------------------------------------------------------------- career */}
       <section className="shell py-24 lg:py-32">

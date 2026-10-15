@@ -20,27 +20,28 @@ export const previewContent: SiteContent = {
   provisional: true,
   meta: {
     siteTitle: "Mike Lombard",
-    tagline: "Art direction for Mingles",
+    tagline: "Enter the Unknown",
     description:
       "Portfolio of Mike Lombard. All text on this preview is provisional and pending the artist's review.",
     ogMediaId: null,
   },
   hero: {
-    eyebrow: "Art direction / Mingles",
+    eyebrow: "Art direction",
     title: "Mike Lombard",
     subtitle:
-      "Artist and art director behind the new Mingles character era. This hero is administrable: Mike can drop an image or a video here from the panel.",
+      "Artist and art director. This hero is administrable: drop an image or a video here from the panel.",
     ctaPrimaryLabel: "View works",
     ctaPrimaryHref: "/works",
     ctaSecondaryLabel: "Register for the mint",
     ctaSecondaryHref: "/mint",
     mediaId: null,
     posterMediaId: null,
+    // Deliberately neutral: this is the artist's own site.
+    studioLabel: "Studio",
   },
   featured: {
     title: "Selected works",
-    intro:
-      "Provisional selection. Publish real projects and pick them here to replace these placeholders.",
+    intro: "A selection of recent paintings.",
     projectIds: [],
   },
   works: {
@@ -51,14 +52,14 @@ export const previewContent: SiteContent = {
   bio: {
     title: "Biography",
     portraitMediaId: null,
+    artworkMediaId: null,
     intro: "Provisional text — pending review by the artist.",
     body: "This biography is a placeholder. No verified biography has been supplied yet, so this space is intentionally generic and fully editable from the admin panel.\n\nNothing on this page should be quoted until the artist replaces it with his own words.",
     visionTitle: "Artistic vision",
     vision:
       "Placeholder: describe the visual language, references and process. This text was not written by the artist.",
-    minglesTitle: "Relationship with Mingles",
-    mingles:
-      "Placeholder: explain the role inside Mingles, the Lombard era and how the character system evolved.",
+    collabTitle: "Collaborations",
+    collab: "Placeholder: collaborations and projects the artist chooses to describe.",
     facts: [],
     socials: [],
   },
@@ -67,6 +68,15 @@ export const previewContent: SiteContent = {
     intro:
       "Provisional timeline. Every entry is editable and must be confirmed before launch.",
     emptyNote: "No verified exhibitions or collaborations have been supplied yet.",
+  },
+  nfts: {
+    title: "NFTs",
+    eyebrow: "On chain",
+    // No other brand is named here: this is the artist's own site.
+    intro:
+      "Digital pieces. Add each one with its image and its story from the admin panel.",
+    note: "Provenance and links are added by the artist only when they are real.",
+    items: [],
   },
   mint: {
     title: "Mint registration",
@@ -139,7 +149,7 @@ export const previewTimeline: TimelineEntry[] = [
     yearLabel: "2026",
     sortYear: 2026,
     sortMonth: null,
-    title: "Mingles — new art direction (provisional)",
+    title: "New body of work (provisional)",
     kind: "collaboration",
     place: null,
     description:

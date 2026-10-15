@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +11,7 @@ import { prefersReducedMotion } from "@/lib/use-reduced-motion";
 const NAV = [
   { href: "/", label: "Index" },
   { href: "/works", label: "Works" },
+  { href: "/nfts", label: "NFTs" },
   { href: "/biography", label: "Biography" },
   { href: "/career", label: "Career" },
   { href: "/mint", label: "Mint" },
@@ -203,19 +203,6 @@ export function SiteFooter({
       <div className="shell grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="max-w-sm">
           <p className="font-display text-2xl tracking-tight">{siteTitle}</p>
-          <span className="mt-5 flex items-center gap-3">
-            {/* Official Mingles mark, already published in the Mingles project. */}
-            <Image
-              src="/brand/mingles-mark.png"
-              alt="Mingles"
-              width={30}
-              height={30}
-              className="opacity-70"
-            />
-            <span className="font-mono text-[0.5625rem] tracking-[0.18em] text-bone-faint uppercase">
-              Art direction for Mingles
-            </span>
-          </span>
           {note ? <p className="mt-4 text-sm text-bone-dim">{note}</p> : null}
           {provisional ? (
             <p className="mt-4 font-mono text-[0.625rem] leading-relaxed tracking-wide text-bone-faint uppercase">
@@ -271,7 +258,6 @@ export function SiteFooter({
       </div>
       <div className="shell flex flex-col gap-2 border-t border-edge py-6 font-mono text-[0.625rem] tracking-[0.14em] text-bone-faint uppercase sm:flex-row sm:items-center sm:justify-between">
         <span>© {new Date().getFullYear()} {siteTitle}</span>
-        <span>Mingles character era</span>
       </div>
     </footer>
   );

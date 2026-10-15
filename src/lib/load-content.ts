@@ -51,9 +51,29 @@ function anonClient() {
 }
 
 /** Deep merge that keeps newly added fields working on older documents. */
+/** Field names that were renamed. Old documents keep working. */
+const LEGACY_FIELDS: Record<string, Record<string, string>> = {
+  bio: { minglesTitle: "collabTitle", mingles: "collab" },
+};
+
+function applyLegacyAliases(source: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...source };
+  for (const [section, aliases] of Object.entries(LEGACY_FIELDS)) {
+    const original = out[section];
+    if (!original || typeof original !== "object") continue;
+    const copy = { ...(original as Record<string, unknown>) };
+    for (const [older, newer] of Object.entries(aliases)) {
+      if (copy[newer] === undefined && copy[older] !== undefined) copy[newer] = copy[older];
+    }
+    out[section] = copy;
+  }
+  return out;
+}
+
 function mergeContent(base: SiteContent, incoming: unknown): SiteContent {
-  const source =
-    incoming && typeof incoming === "object" ? (incoming as Partial<SiteContent>) : {};
+  const source = applyLegacyAliases(
+    incoming && typeof incoming === "object" ? (incoming as Record<string, unknown>) : {},
+  ) as Partial<SiteContent>;
   const out: Record<string, unknown> = { ...base };
   for (const [key, value] of Object.entries(source)) {
     const fallback = (base as unknown as Record<string, unknown>)[key];

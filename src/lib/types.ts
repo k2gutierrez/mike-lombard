@@ -79,6 +79,21 @@ export type TimelineEntry = {
 };
 
 export type SocialLink = { label: string; href: string };
+
+/**
+ * One NFT piece. Kept flat and permissive: the artist supplies the image, a
+ * title, a description and optionally a link to the piece on chain. Nothing is
+ * assumed about a contract, a price or a date.
+ */
+export type NftItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  mediaId: string | null;
+  year: number | null;
+  edition: string | null;
+  linkUrl: string | null;
+};
 export type Fact = { label: string; value: string };
 
 export type SiteContent = {
@@ -102,6 +117,8 @@ export type SiteContent = {
     mediaId: string | null;
     /** Still shown before/without the hero video. */
     posterMediaId: string | null;
+    /** The "studio" value in the hero stats. Editable, and not Mingles by default. */
+    studioLabel: string;
   };
   featured: {
     title: string;
@@ -115,13 +132,16 @@ export type SiteContent = {
   };
   bio: {
     title: string;
+    /** A photo of the artist. */
     portraitMediaId: string | null;
+    /** One of his works, shown next to the portrait. */
+    artworkMediaId: string | null;
     intro: string;
     body: string;
     visionTitle: string;
     vision: string;
-    minglesTitle: string;
-    mingles: string;
+    collabTitle: string;
+    collab: string;
     facts: Fact[];
     socials: SocialLink[];
   };
@@ -129,6 +149,14 @@ export type SiteContent = {
     title: string;
     intro: string;
     emptyNote: string;
+  };
+  nfts: {
+    title: string;
+    eyebrow: string;
+    intro: string;
+    /** Free text under the grid, for provenance or context. */
+    note: string;
+    items: NftItem[];
   };
   mint: {
     title: string;

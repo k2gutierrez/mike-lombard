@@ -541,11 +541,12 @@ values (
       'ctaSecondaryLabel', 'Register for the mint',
       'ctaSecondaryHref', '/mint',
       'mediaId', null,
-      'posterMediaId', null
+      'posterMediaId', null,
+      'studioLabel', 'Studio'
     ),
     'featured', jsonb_build_object(
       'title', 'Selected works',
-      'intro', 'Provisional selection. Replace these placeholders with real works from the admin panel.',
+      'intro', 'A selection of recent paintings.',
       'projectIds', '[]'::jsonb
     ),
     'works', jsonb_build_object(
@@ -556,14 +557,22 @@ values (
     'bio', jsonb_build_object(
       'title', 'Biography',
       'portraitMediaId', null,
+      'artworkMediaId', null,
       'intro', 'Provisional text — pending review by the artist.',
       'body', 'This biography is a placeholder. Mike Lombard is the artist behind the new Mingles character art direction, but no verified biography has been supplied yet, so this space is intentionally generic and fully editable from the admin panel.\n\nNothing on this page should be quoted until the artist has replaced it with his own words.',
       'visionTitle', 'Artistic vision',
       'vision', 'Placeholder: describe the visual language, references and process. This text was not written by the artist.',
-      'minglesTitle', 'Relationship with Mingles',
-      'mingles', 'Placeholder: explain the role inside Mingles, the Lombard era and how the character system evolved.',
+      'minglesTitle', 'Collaborations',
+      'mingles', 'Placeholder: collaborations and projects the artist chooses to describe.',
       'facts', jsonb_build_array(),
       'socials', jsonb_build_array()
+    ),
+    'nfts', jsonb_build_object(
+      'title', 'NFTs',
+      'eyebrow', 'On chain',
+      'intro', 'Digital pieces. Add each one with its image and its story from the admin panel.',
+      'note', 'Provenance and links are added by the artist only when they are real.',
+      'items', '[]'::jsonb
     ),
     'career', jsonb_build_object(
       'title', 'Career',

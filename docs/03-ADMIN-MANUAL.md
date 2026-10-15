@@ -54,7 +54,22 @@ También hay historial de cambios (quién hizo qué y cuándo).
 Para quitar una obra: selecciónala y pulsa el icono de papelera. Se borran
 también sus archivos. Confirmación previa, pero no se puede deshacer.
 
-## 4. Cambiar la portada y el vídeo de inicio
+## 4. La sección de NFTs
+
+Pestaña **NFTs**. Sirve para mostrar obra digital.
+
+- **Arriba**: el título, el antetítulo y el texto de introducción de la sección.
+- **Pieces**: cada pieza lleva **título**, **imagen**, descripción, año, edición
+  (por ejemplo `1/1`) y un enlace opcional. Se ordenan con ↑ ↓ y se borran con
+  **Remove**.
+- **Abajo**: sube aquí las imágenes y luego elígelas en cada pieza.
+
+Aparece en la portada (las tres primeras) y en su propia página, `/nfts`.
+
+**No añadas precio, dirección de contrato ni fecha de mint** hasta que sean
+reales. La sección no promete nada por sí sola.
+
+## 5. Cambiar la portada y el vídeo de inicio
 
 Pestaña **Landing & featured**.
 
@@ -67,17 +82,18 @@ Pestaña **Landing & featured**.
 - **Selected works**: marca hasta 4 obras y ordena con ↑ ↓. Ese es el orden de la
   portada.
 
-## 5. Biografía, trayectoria y mint
+## 6. Biografía, trayectoria y mint
 
-- **Biography**: retrato, historia, sección de visión, sección de Mingles,
-  datos clave y enlaces. Si todavía no hay datos verificados, deja las listas
-  vacías: es mejor una página honesta que una inventada.
+- **Biography**: dos imágenes independientes — **Photo of the artist** (su foto)
+  y **One of his works** (una obra). Además: historia, sección de visión, sección
+  de colaboraciones, datos clave y enlaces. Si todavía no hay datos verificados,
+  deja las listas vacías: es mejor una página honesta que una inventada.
 - **Career**: **New entry** por cada hito. Solo aparecen en la web las entradas
   marcadas como **Published**. Arrastra para ordenar.
 - **Mint**: textos de la página de registro. **No añadas precio, contrato ni
   fecha** hasta que sean reales y estén aprobados.
 
-## 6. Registros del mint
+## 7. Registros del mint
 
 Pestaña **Registrations**: lista privada de correos y wallets, con buscador y
 botón **Export CSV** para abrirlo en Excel o Sheets.
@@ -92,7 +108,7 @@ Cosas importantes:
 - El formulario avisa claramente de que registra interés y **no garantiza
   asignación**. Nunca pide pagos, aprobaciones ni transacciones.
 
-## 7. Cuando algo no sale bien
+## 8. Cuando algo no sale bien
 
 | Mensaje | Qué significa |
 | --- | --- |
@@ -100,10 +116,12 @@ Cosas importantes:
 | *Unrecognised file* | El archivo no es realmente JPEG/PNG/WebP/AVIF/GIF/MP4/WebM/MOV. |
 | *Storage rejected the file* | Formato o tamaño fuera de la política del bucket. |
 | *Not authorized* | La sesión caducó: vuelve a entrar en `/admin/login`. |
+| *File missing* en una miniatura | El archivo no está en el servidor aunque el registro sí. Borra esa entrada y vuélvela a subir. |
+| *value out of range for type integer* | Corregido en octubre de 2026. Si reaparece, avisa. |
 | *Demo mode* | No hay backend configurado; avisa antes de trabajar en serio. |
 | *Too many attempts* | Límite de intentos de acceso. Espera unos minutos. |
 
-## 8. Antes de lanzar
+## 9. Antes de lanzar
 
 1. Revisa que ningún texto siga diciendo "provisional".
 2. Cuando el artista apruebe todos los textos, desmarca **Provisional flag** en
