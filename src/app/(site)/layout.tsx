@@ -2,10 +2,15 @@ import { loadSite } from "@/lib/load-content";
 import { SiteFooter, SiteHeader } from "@/components/shell";
 import { ScrollProgress } from "@/components/effects";
 
-export const metadata = {
-  robots: { index: false, follow: false },
-};
-
+/**
+ * The public site deliberately sets NO `robots` metadata here.
+ *
+ * It used to carry a hardcoded `noindex`, which silently overrode the
+ * `provisional` switch in the admin panel: unchecking "provisional content"
+ * removed the banner but the site stayed out of search indexes. The decision
+ * lives in exactly one place now — `generateMetadata()` in the root layout,
+ * driven by `content.provisional`.
+ */
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   // Note: this layout deliberately does NOT read cookies or headers. Doing so
   // would mark every public page as dynamic and throw away the static render +

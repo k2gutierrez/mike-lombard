@@ -39,6 +39,7 @@ async function migrate() {
     "202610120001_mike_lombard_foundation.sql",
     "202610120002_publish_intent.sql",
     "202610120003_draft_rev_bigint.sql",
+    "202610120004_timeline_dedupe.sql",
   ]) {
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8"),
@@ -247,6 +248,29 @@ test("saving the site document does not overflow the revision counter", async ()
       /permission denied/,
     );
     await db.exec("reset role");
+  } finally {
+    await db.close();
+  }
+});
+
+test("re-applying the migrations does not duplicate the seeded timeline", async () => {
+  const db = await migrate();
+  try {
+    const before = await db.query("select count(*)::int as n from public.ml_timeline");
+    // The migrations are documented as safe to re-run; prove it.
+    for (const file of [
+      "202610120001_mike_lombard_foundation.sql",
+      "202610120002_publish_intent.sql",
+      "202610120003_draft_rev_bigint.sql",
+      "202610120004_timeline_dedupe.sql",
+    ]) {
+      await db.exec(
+        await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8"),
+      );
+    }
+    const after = await db.query("select count(*)::int as n from public.ml_timeline");
+    assert.equal(after.rows[0].n, before.rows[0].n, "the seed must not be duplicated");
+    assert.equal(before.rows[0].n, 2, "two seeded entries");
   } finally {
     await db.close();
   }

@@ -604,10 +604,16 @@ values
    'draft', 20, false, null)
 on conflict (slug) do nothing;
 
+-- Guarded by a NOT EXISTS on the title: `on conflict do nothing` needs a unique
+-- constraint, and this table has none. Without this guard, re-applying the
+-- migration inserted a second copy of every seeded entry (it happened).
 insert into public.ml_timeline (year_label, sort_year, title, kind, place, description, status, display_order)
-values
-  ('2026', 2026, 'Mingles — new art direction (provisional)', 'collaboration', null,
+select * from (values
+  ('2026', 2026, 'Mingles — new art direction (provisional)', 'collaboration', null::text,
    'Placeholder milestone. Confirm details with the artist before publishing.', 'draft', 10),
-  ('—', null, 'Add exhibitions, collaborations and milestones', 'milestone', null,
+  ('—', null::integer, 'Add exhibitions, collaborations and milestones', 'milestone', null::text,
    'Every entry in this line is written by the artist. Nothing here is invented by the site.', 'draft', 20)
-on conflict do nothing;
+) as seed(year_label, sort_year, title, kind, place, description, status, display_order)
+where not exists (
+  select 1 from public.ml_timeline t where t.title = seed.title
+);

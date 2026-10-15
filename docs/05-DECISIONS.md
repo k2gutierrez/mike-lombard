@@ -116,6 +116,24 @@ The rule now:
 * whether to mount wallet code at all is decided **on the server** and passed down
   as a prop, so both renders always agree.
 
+## Never delete rows by a `like` pattern
+
+Cleaning up the seeded placeholder projects, I ran a filter on
+`slug=like.placeholder*` and deleted a **published project** by mistake: the
+artist's own slug matched it. The files survived in Storage, so the project and
+its twelve media rows were rebuilt from the storage listing and the inventory
+taken beforehand — but that was luck, not process.
+
+Rules that came out of it:
+
+* delete by **exact id**, never by a name pattern;
+* **list first and read the output** — the deletion printed
+  `Hyper Realiste (published)` before removing it, and that line was the warning;
+* prefer **soft delete** (`status = 'archived'`) for anything a human published;
+* write an **audit row for destructive admin operations**. `delete-project` is the
+  one action that still leaves no trail, which is why recovering this needed
+  Storage forensics instead of a log lookup.
+
 ## Out of scope, on purpose
 
 - **No transcoding, no video CDN, no HLS.** MP4/WebM served straight from

@@ -10,6 +10,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// A sign-in page must never be indexed. `/admin` already declared this, the
+// login route did not, so it inherited the public site's `index, follow`.
+export const metadata = {
+  title: "Admin sign-in",
+  robots: { index: false, follow: false },
+};
+
 
 export default function AdminLoginPage() {
   // Configuration problems are reported here, in the deployment, instead of
